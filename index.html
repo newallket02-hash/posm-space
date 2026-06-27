@@ -381,16 +381,11 @@ Brochure cá Aqua Cafe Q2 đang làm"></textarea>
   }else{
     T.textContent='Dữ liệu';const n=arr().length,d=arr().filter(x=>x.demo).length;
     B.innerHTML=`
-      ${boardId?
-        `<div class="hint">🟢 <b>Đang lưu chung</b> · mã kho <code>${boardId}</code>. Gửi <b>link chia sẻ</b> cho nhân viên là họ thấy & sửa chung.</div>
-         <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">
-           <button class="btn primary" onclick="saveAll()">💾 Lưu tất cả</button>
-           <button class="btn" onclick="pullShared()">🔄 Tải mới</button>
-           <button class="btn" onclick="copyShareLink()">📋 Copy link chia sẻ</button>
-         </div>`
-       :
-        `<div class="hint">🔴 <b>Chưa có kho chung</b> — đang chỉ lưu trong máy này. Bấm nút dưới để tạo kho dùng chung (chỉ làm 1 lần).</div>
-         <div style="margin:12px 0"><button class="btn primary" onclick="createBoard()">➕ Tạo kho lưu chung</button></div>`}
+      <div class="hint">Dữ liệu lưu <b>chung trên web</b> — mọi người vào posm.space cùng thấy. Tự lưu khi chỉnh, hoặc bấm <b>💾 Lưu</b> cho chắc.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">
+        <button class="btn primary" onclick="saveAll()">💾 Lưu tất cả lên web</button>
+        <button class="btn" onclick="pullShared()">🔄 Tải mới</button>
+      </div>
       <div class="divider"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px">
         <button class="btn" onclick="exportExcel()">📊 Tải Excel</button>
@@ -506,65 +501,41 @@ function exportExcel(){
   toast('Đã xuất file Excel');
 }
 
-/* ---------- lưu CHUNG qua jsonblob.com (không Google, không function, không token) ---------- */
-const JSONBLOB='https://jsonblob.com/api/jsonBlob';
-const BAKED_BOARD_ID='';   /* điền mã kho vào đây để mọi người vào posm.space là chung 1 bảng */
-let boardId=resolveBoardId();
-function resolveBoardId(){
-  try{const m=(location.hash||'').match(/board=([A-Za-z0-9_-]+)/);if(m){localStorage.setItem('posm_board_id',m[1]);return m[1];}}catch(e){}
-  if(BAKED_BOARD_ID)return BAKED_BOARD_ID;
-  try{return localStorage.getItem('posm_board_id')||'';}catch(e){return '';}
-}
-function blobUrl(){return JSONBLOB+'/'+boardId;}
-let dirty=new Set(),pushT=null;
-async function remoteGet(){const r=await fetch(blobUrl(),{headers:{Accept:'application/json'},cache:'no-store'});if(!r.ok)throw new Error('GET '+r.status);return r.json();}
-async function remotePut(board){const r=await fetch(blobUrl(),{method:'PUT',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(board)});if(!r.ok)throw new Error('PUT '+r.status);return true;}
-function queuePush(id){if(!boardId)return;if(store.tasks[id]&&store.tasks[id].demo)return;dirty.add(id);clearTimeout(pushT);pushT=setTimeout(flushDirty,600);}
-function pushDelete(id){if(!boardId)return;dirty.add('DEL:'+id);clearTimeout(pushT);pushT=setTimeout(flushDirty,300);}
+/* ---------- lưu CHUNG trên web qua Netlify Blobs ---------- */
+const API='/.netlify/functions/store';
+let dirty=new Set(), pushT=null;
+async function apiGet(){const r=await fetch(API,{cache:'no-store'});if(!r.ok)throw new Error('GET '+r.status);return r.json();}
+async function apiPost(p){const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});if(!r.ok)throw new Error('POST '+r.status);return r.json();}
+function queuePush(id){if(store.tasks[id]&&store.tasks[id].demo)return;dirty.add(id);clearTimeout(pushT);pushT=setTimeout(flushDirty,400);}
+function pushDelete(id){dirty.add('DEL:'+id);clearTimeout(pushT);pushT=setTimeout(flushDirty,200);}
 async function flushDirty(){
-  if(!boardId||!dirty.size)return;
+  if(!dirty.size)return;
   const ids=[...dirty];dirty.clear();
-  try{
-    let board;try{board=await remoteGet();}catch(e){board={tasks:{}};}
-    if(!board||!board.tasks)board={tasks:{}};
-    ids.forEach(x=>{if(x.slice(0,4)==='DEL:')delete board.tasks[x.slice(4)];else if(store.tasks[x])board.tasks[x]=store.tasks[x];});
-    await remotePut(board);toast('✓ Đã lưu chung');
-  }catch(e){ids.forEach(i=>dirty.add(i));toast('Chưa lưu được: '+(e.message||e));clearTimeout(pushT);pushT=setTimeout(flushDirty,5000);}
+  const upsert=ids.filter(x=>x.slice(0,4)!=='DEL:').map(id=>store.tasks[id]).filter(Boolean);
+  const del=ids.filter(x=>x.slice(0,4)==='DEL:').map(x=>x.slice(4));
+  try{await apiPost({upsert,delete:del});toast('✓ Đã lưu chung');}
+  catch(e){ids.forEach(i=>dirty.add(i));toast('Chưa lưu được lên web — đã giữ tạm ở máy này');clearTimeout(pushT);pushT=setTimeout(flushDirty,5000);}
 }
 async function saveAll(){
-  if(!boardId)return toast('Chưa có kho chung — vào ⋯ Dữ liệu → Tạo kho lưu chung');
   toast('Đang lưu…');
-  try{const board={tasks:{}};arr().filter(t=>!t.demo).forEach(t=>board.tasks[t.taskId]=t);await remotePut(board);toast('✓ Đã lưu tất cả lên web');}
-  catch(e){toast('Không lưu được: '+(e.message||e));}
+  try{await apiPost({upsert:arr().filter(t=>!t.demo)});toast('✓ Đã lưu tất cả lên web');}
+  catch(e){toast('Không lưu được lên web: '+(e.message||e));}
 }
 async function pullShared(silent){
-  if(!boardId){if(!silent)toast('Chưa có kho chung');return;}
-  try{const b=await remoteGet();if(b&&b.tasks){mergeServer(b.tasks);save();render();}if(!silent)toast('Đã tải bản mới nhất');}
+  try{const b=await apiGet();if(b&&b.tasks){mergeServer(b.tasks);save();render();}if(!silent)toast('Đã tải bản mới nhất');}
   catch(e){if(!silent)toast('Không tải được: '+(e.message||e));}
 }
 function mergeServer(serverTasks){
-  const m={};Object.values(serverTasks||{}).forEach(t=>{if(t&&t.taskId){if(!t.col)t.col=bucket(t.stage);if(!t.updated)t.updated=todayStr(0);m[t.taskId]={...t,demo:false};}});
+  const m={};
+  Object.values(serverTasks||{}).forEach(t=>{if(t&&t.taskId){if(!t.col)t.col=bucket(t.stage);if(!t.updated)t.updated=todayStr(0);m[t.taskId]={...t,demo:false};}});
   store.tasks=m;
 }
-async function createBoard(){
-  toast('Đang tạo kho chung…');
-  try{
-    const r=await fetch(JSONBLOB,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({tasks:store.tasks})});
-    if(!r.ok)throw new Error('POST '+r.status);
-    let id=r.headers.get('X-jsonblob')||((r.headers.get('Location')||'').split('/').pop());
-    if(!id)throw new Error('không lấy được mã kho (trình duyệt chặn header)');
-    boardId=id;try{localStorage.setItem('posm_board_id',id);}catch(e){}
-    location.hash='board='+id;render();openDraw('data');toast('✓ Đã tạo kho chung');
-  }catch(e){toast('Tạo kho lỗi: '+(e.message||e));}
-}
-function copyShareLink(){
-  const link=location.origin+location.pathname+'#board='+boardId;
-  navigator.clipboard.writeText(link).then(()=>toast('Đã copy link chia sẻ'),()=>toast(link));
-}
 async function initShared(){
-  if(!boardId){render();return;}
-  try{const b=await remoteGet();if(b&&b.tasks&&Object.keys(b.tasks).length){mergeServer(b.tasks);save();}else{await remotePut({tasks:store.tasks});}}
-  catch(e){}
+  try{
+    const b=await apiGet();
+    if(b&&b.tasks&&Object.keys(b.tasks).length){mergeServer(b.tasks);save();}
+    else{await apiPost({upsert:arr().filter(t=>!t.demo)});}   /* lần đầu: nạp seed lên web */
+  }catch(e){/* offline → dùng bản trong máy */}
   render();
 }
 
