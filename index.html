@@ -133,10 +133,45 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
   .pcard .rm{margin-top:2px;background:#fbeaea;border:1px solid #f0c2bd;color:#b3261e;border-radius:8px;padding:7px 10px;width:100%;cursor:pointer}
   .thumb{max-width:100%;max-height:200px;border-radius:10px;border:1px solid #e8e2d6;display:block}
   .cimg{height:48px;width:auto;max-width:100%;object-fit:cover;border-radius:6px;margin-top:6px;display:block}
+  .tabs{display:flex;gap:6px;margin-top:10px}
+  .tab{flex:1;padding:9px 10px;border:1px solid #e6dfce;background:#fff;border-radius:10px;font-weight:700;font-size:13px;color:#8a857d;cursor:pointer}
+  .tab.on{background:#c79a3a;color:#fff;border-color:#c79a3a}
+  .dsum{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 10px}
+  .dsum .s{padding:8px 12px;border-radius:10px;font-weight:700;font-size:13px}
+  .dctrl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .dctrl select{padding:8px;border:1px solid #e0d8c8;border-radius:8px;font-size:13px;background:#fff}
+  .dlist{display:flex;flex-direction:column;gap:16px;padding-bottom:50px}
+  .dgrp h4{margin:0 0 8px;font-size:13px;color:#8a857d;font-weight:700}
+  .dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+  .dcard{border:1px solid #e8e2d6;border-left-width:4px;border-radius:12px;padding:10px;background:#fff;cursor:pointer}
+  .dcard.red{border-left-color:#d64545}.dcard.amber{border-left-color:#e0a32e}.dcard.green{border-left-color:#3f9d6b}.dcard.gray{border-left-color:#c3bdb0}
+  .dcard .dt{font-weight:700;font-size:13px;margin-bottom:5px}
+  .dcard .dmeta{font-size:12px;color:#8a857d;display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:3px 0}
+  .dbadge{padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700}
+  .dprog{font-size:13px;margin:3px 0}
+  .dcimg{width:100%;max-height:80px;object-fit:cover;border-radius:8px;margin-top:6px;display:block}
+  .tytag{display:inline-block;padding:1px 7px;border-radius:5px;font-size:10px;font-weight:800;vertical-align:middle;margin-right:3px}
+  .ty-tv{background:#e6edfb;color:#3556a8}.ty-standee{background:#e7f3ec;color:#2f7d4f}.ty-tentcard{background:#fbeede;color:#b56a17}.ty-khác,.ty-{background:#eceef0;color:#5a6472}
+  .dbranch{font-weight:800;font-size:15px;margin:14px 0 2px;padding-top:8px;border-top:2px solid #efe8d8}
+  .darea{font-size:11px;font-weight:800;color:#8a857d;margin:12px 0 6px;text-transform:uppercase;letter-spacing:.4px}
+  .dbadge2{padding:2px 7px;border-radius:6px;font-size:11px;font-weight:700;background:#eef0f2;color:#5a6472}
+  .dcard.none{border-left-color:#d9d2c4}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
+
+<div id="loginGate" style="position:fixed;inset:0;z-index:9999;background:#f4efe4;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="width:100%;max-width:340px;background:#fff;border:1px solid #e6dfce;border-radius:16px;padding:22px;box-shadow:0 12px 34px rgba(0,0,0,.10)">
+    <div style="font-weight:800;font-size:19px;margin-bottom:2px">POSM <span style="color:#c79a3a">Ms Trúc</span></div>
+    <div style="color:#8a857d;font-size:13px;margin-bottom:16px">Đăng nhập để xem</div>
+    <input id="lgU" placeholder="ID" autocomplete="username" style="width:100%;padding:12px;border:1px solid #e0d8c8;border-radius:10px;margin-bottom:10px;box-sizing:border-box;font-size:15px">
+    <input id="lgP" type="password" placeholder="Mật khẩu" autocomplete="current-password" style="width:100%;padding:12px;border:1px solid #e0d8c8;border-radius:10px;box-sizing:border-box;font-size:15px" onkeydown="if(event.key==='Enter')doLogin()">
+    <div id="lgErr" style="color:#b3261e;font-size:13px;min-height:18px;margin:8px 0"></div>
+    <button onclick="doLogin()" style="width:100%;padding:12px;border:none;border-radius:10px;background:#c79a3a;color:#fff;font-weight:700;font-size:15px;cursor:pointer">Đăng nhập</button>
+  </div>
+</div>
+
 
 <div class="head">
   <div class="row1">
@@ -144,17 +179,22 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
     <div class="sp"></div>
     <button class="btn primary" onclick="saveAll()">💾 Lưu</button>
     <button class="btn" onclick="pullShared()">🔄 Tải mới</button>
-    <button class="btn" onclick="openDraw('add')">✍ Tự nhập</button>
-    <button class="btn" onclick="exportExcel()">📊 Excel</button>
+    <button class="btn" id="btnTunhap" onclick="openDraw('add')">✍ Tự nhập</button>
+    <button class="btn" id="btnExcel" onclick="exportExcel()">📊 Excel</button>
     <button class="btn sm" onclick="openDraw('data')">⋯ Dữ liệu</button>
   </div>
 
-  <div class="prog">
+  <div class="tabs">
+    <button class="tab on" id="tabPosm" onclick="switchView('posm')">📋 Tiến độ POSM</button>
+    <button class="tab" id="tabDisp" onclick="switchView('display')">🪧 Standee · Tentcard · TV</button>
+  </div>
+
+  <div class="prog" id="posmProg">
     <div class="track" id="progTrack"></div>
     <div class="lbl" id="progLbl"></div>
   </div>
 
-  <div class="searchbar">
+  <div class="searchbar" id="posmSearch">
     <span class="sicon">🔍</span>
     <input id="searchInput" placeholder="Tìm task: tên · PĐX · người · chi nhánh · nội dung…" oninput="onSearch(this.value)">
     <button id="searchClear" class="sclear" onclick="clearSearch()" style="display:none">✕</button>
@@ -164,6 +204,13 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
 </div>
 
 <div class="board" id="board"></div>
+
+<div id="displayWrap" style="display:none">
+  <div class="searchbar" style="margin:12px 0"><span class="sicon">🔍</span><input id="dSearchInput" placeholder="Tìm: vị trí · nội dung · khu vực · ghi chú…" oninput="dfilter.q=this.value;renderDisplays()"><span class="scount" id="dSearchCount"></span></div>
+  <div class="dsum" id="dSum"></div>
+  <div class="dctrl" id="dCtrl"></div>
+  <div class="dlist" id="dList"></div>
+</div>
 
 <div class="scrim" id="scrim" onclick="closeDraw()"></div>
 <div class="draw" id="draw"><header><h3 id="drawTitle"></h3><button class="btn sm" onclick="closeDraw()">Đóng</button></header><div class="db" id="drawBody"></div></div>
@@ -182,6 +229,13 @@ const COLS=[
 const COL_IDS=COLS.map(c=>c.id);
 const PRIOS=['Gấp','Trung bình','Bình thường','—'];
 const BR_LIST=['Quận 2','Quận 7','Quận 1','Thủ Đức','Đà Nẵng','Khác','Không rõ'];
+/* ====== TÀI KHOẢN XEM TRANG — sửa danh sách này để cấp ID/mật khẩu ======
+   Mỗi dòng: {u:'ID', p:'mật khẩu', name:'Tên hiển thị'} */
+const ACCOUNTS=[
+  {u:'truc',  p:'123', name:'Trúc'},
+  {u:'tuyet', p:'123', name:'Tuyết'},
+  {u:'nhung', p:'123', name:'Nhung'},
+];
 const BRANCHES=['Healing World Q2','Nhà hàng Quận 2','Healing Land Q7','Q7','Quận 1','Thủ Đức','Đà Nẵng','Khác'];
 const BRANCH_COLORS={
   'Quận 2':{bg:'#e3f1e8',fg:'#2f7d4f'}, 'Quận 7':{bg:'#e6edfb',fg:'#3556a8'},
@@ -254,7 +308,8 @@ function isStuck(t){if(isDone(t))return false;if(t.stuck)return true;if(isOverdu
 
 /* ---------- render ---------- */
 function render(){
-  const A=arr();
+  renderDisplays();
+  const A=arr().filter(t=>t.kind!=='display');
   const done=A.filter(isDone),urg=A.filter(isUrgent),over=A.filter(isOverdue),stk=A.filter(isStuck);
   // progress bar by column
   const track=document.getElementById('progTrack');
@@ -344,11 +399,11 @@ function attachImg(id,inp){
       if(w>h2&&w>max){h2=Math.round(h2*max/w);w=max;}else if(h2>=w&&h2>max){w=Math.round(w*max/h2);h2=max;}
       const cv=document.createElement('canvas');cv.width=w;cv.height=h2;cv.getContext('2d').drawImage(im,0,0,w,h2);
       let data;try{data=cv.toDataURL('image/jpeg',0.6);}catch(err){data=e.target.result;}
-      store.tasks[id].img=data;store.tasks[id].updated=todayStr(0);save();openTask(id);render();queuePush(id);toast('Đã đính kèm hình');};
+      store.tasks[id].img=data;store.tasks[id].updated=todayStr(0);save();(store.tasks[id].kind==='display'?openDisplay:openTask)(id);render();queuePush(id);toast('Đã đính kèm hình');};
     im.onerror=()=>toast('Ảnh lỗi');im.src=e.target.result;};
   rd.readAsDataURL(file);
 }
-function removeImg(id){delete store.tasks[id].img;store.tasks[id].updated=todayStr(0);save();openTask(id);render();queuePush(id);toast('Đã xóa hình');}
+function removeImg(id){delete store.tasks[id].img;store.tasks[id].updated=todayStr(0);save();(store.tasks[id]&&store.tasks[id].kind==='display'?openDisplay:openTask)(id);render();queuePush(id);toast('Đã xóa hình');}
 
 /* ---------- task detail drawer ---------- */
 function openTask(id){
@@ -433,7 +488,7 @@ Brochure cá Aqua Cafe Q2 đang làm"></textarea>
         <input type="file" id="jf" accept=".json" style="display:none" onchange="importJSONfile(this)"></div>
       <div class="hint">Đang có <b>${n}</b> task.${d?` (${d} DEMO)`:''} Lưu gần nhất: ${store.savedAt?new Date(store.savedAt).toLocaleString('vi-VN'):'—'}.</div>
       ${d?`<button class="btn" onclick="clearDemo()">🧹 Xóa ${d} task DEMO</button> `:''}
-      <button class="btn" style="border-color:#f0c2bd;color:var(--red)" onclick="wipe()">🗑 Xóa toàn bộ</button>`;
+      <button class="btn" onclick="logout()">🔒 Đăng xuất</button> <button class="btn" style="border-color:#f0c2bd;color:var(--red)" onclick="wipe()">🗑 Xóa toàn bộ</button>`;
   }
   openScrim();
 }
@@ -478,7 +533,7 @@ function doImport(){
   save();render();closeDraw();toast(`+${add} mới · ${mrg} gộp`);
 }
 function copyUpdateTSV(){
-  const A=arr().filter(t=>!t.demo);if(!A.length)return toast('Không có task thật');
+  const A=arr().filter(t=>!t.demo&&t.kind!=='display');if(!A.length)return toast('Không có task thật');
   const lbl=c=>(COLS.find(x=>x.id===c)||{}).label||c;
   const head=['Task ID','Ưu tiên','Tiến độ','Trạng thái','Ghi chú'].join('\t');
   const lines=A.map(t=>[t.taskId,t.prio||'',lbl(t.col),isDone(t)?'Đã xong':isOverdue(t)?'Trễ':isStuck(t)?'Kẹt':'Đang chạy',t.note||''].join('\t'));
@@ -510,7 +565,7 @@ function rowOf(t){const lbl=c=>(COLS.find(x=>x.id===c)||{}).label||c;
   const st=isDone(t)?'Đã xong':isOverdue(t)?'Trễ':isStuck(t)?'Kẹt':'Đang chạy';
   return [fmtD(t.deadline),t.taskId,t.branch||'',t.name||'',t.pdx||'',t.requester||'',lbl(t.col),t.prio||'',st,t.note||''];}
 function exportExcel(){
-  const A=arr().filter(t=>!t.demo);
+  const A=arr().filter(t=>!t.demo&&t.kind!=='display');
   if(!A.length)return toast('Không có task thật để xuất');
   const withD=A.filter(t=>parseDate(t.deadline)).sort((a,b)=>parseDate(a.deadline)-parseDate(b.deadline));
   const noD=A.filter(t=>!parseDate(t.deadline));
@@ -653,7 +708,195 @@ function commitAdd(){
 }
 
 let tT;function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.add('on');clearTimeout(tT);tT=setTimeout(()=>e.classList.remove('on'),2100);}
-render();initShared();
+
+/* ================= MỤC 2: STANDEE / TENTCARD / TV (tổng hợp vị trí + nội dung) ================= */
+const CATALOG_Q2=[{id:"C2_001",dtype:"TV",area:"Sảnh chờ",floor:"G",dept:"HEALING WORLD",spot:"Tivi Sảnh chờ NGANG 1 (Tầng G)",content:"",note:""},
+{id:"C2_002",dtype:"TV",area:"Sảnh chờ",floor:"G",dept:"HEALING WORLD",spot:"Tivi Sảnh chờ NGANG 2 (Tầng G)",content:"",note:""},
+{id:"C2_003",dtype:"TV",area:"Sảnh chờ",floor:"G",dept:"HEALING WORLD",spot:"Tivi Sảnh chờ DỌC (Tầng G)",content:"Ví dụ: Đổi thành thời lượng 10p, Xóa ctrinh khuyến mãi 10k",note:""},
+{id:"C2_004",dtype:"TV",area:"Nhà hàng",floor:"G",dept:"NHÀ HÀNG GOLDEN KITCHEN",spot:"TV Nhà hàng 1 (Trái) - Tầng G",content:"Chia đôi màn hình – Trái: Slide nước • Phải: Menu nước",note:""},
+{id:"C2_005",dtype:"TV",area:"Nhà hàng",floor:"G",dept:"NHÀ HÀNG GOLDEN KITCHEN",spot:"TV Nhà hàng 2 (Giữa) - Tầng G",content:"Hình ảnh món ăn",note:""},
+{id:"C2_006",dtype:"TV",area:"Nhà hàng",floor:"G",dept:"NHÀ HÀNG GOLDEN KITCHEN",spot:"TV Nhà hàng 3 (Phải) - Tầng G",content:"- Trái: hình ản món ăn, - Phải: menu món ăn",note:""},
+{id:"C2_007",dtype:"TV",area:"Nhà hàng",floor:"G",dept:"NHÀ HÀNG GOLDEN KITCHEN",spot:"TV Nhà hàng nhỏ - Tầng G",content:"Clip sinh nhật",note:""},
+{id:"C2_008",dtype:"TV",area:"Snackbar",floor:"1",dept:"HEALING WORLD",spot:"TV Snackbar 1 (Trái) - Tầng 1",content:"",note:""},
+{id:"C2_009",dtype:"TV",area:"Snackbar",floor:"1",dept:"HEALING WORLD",spot:"TV Snackbar 2 (Giữa) - Tầng 1",content:"",note:""},
+{id:"C2_010",dtype:"TV",area:"Snackbar",floor:"1",dept:"HEALING WORLD",spot:"TV Snackbar 3 (Phải) - Tầng 1",content:"",note:""},
+{id:"C2_011",dtype:"TV",area:"Bathhouse",floor:"1",dept:"HEALING WORLD",spot:"TV Bathhouse nam 1 DỌC - Tầng 1",content:"",note:""},
+{id:"C2_012",dtype:"TV",area:"Bathhouse",floor:"1",dept:"HEALING WORLD",spot:"TV Bathhouse nam 2 DỌC - Tầng 1",content:"",note:""},
+{id:"C2_013",dtype:"TV",area:"Bathhouse",floor:"1",dept:"HEALING WORLD",spot:"TV Bathhouse nam 3 NGANG - Tầng 1",content:"",note:""},
+{id:"C2_014",dtype:"TV",area:"Bathhouse",floor:"1",dept:"HEALING WORLD",spot:"TV Bathhouse nam 4 NGANG - Tầng 1",content:"",note:""},
+{id:"C2_015",dtype:"TV",area:"Bathhouse",floor:"1",dept:"HEALING WORLD",spot:"TV Bathhouse nữ 1 DỌC - Tầng 1",content:"Hình ảnh thức ăn thức uống nhà hàng",note:""},
+{id:"C2_016",dtype:"TV",area:"Bathhouse",floor:"1",dept:"HEALING WORLD",spot:"TV Bathhouse nữ 2 DỌC - Tầng 1",content:"Hình ảnh thức ăn thức uống nhà hàng",note:""},
+{id:"C2_017",dtype:"TV",area:"Bathhouse",floor:"1",dept:"HEALING WORLD",spot:"TV Bathhouse nữ 3 DỌC - Tầng 1",content:"Hình ảnh thức ăn thức uống nhà hàng",note:""},
+{id:"C2_018",dtype:"TV",area:"Cầu thang",floor:"B",dept:"HEALING WORLD",spot:"TV Cầu thang Spa - Tầng B",content:"Không sử dụng hình ảnh quận 3, quận 7",note:""},
+{id:"C2_019",dtype:"TV",area:"Cầu thang",floor:"1",dept:"HEALING WORLD",spot:"TV Cầu thang 1 - Tầng 1",content:"Không sử dụng hình ảnh quận 3, quận 7",note:""},
+{id:"C2_020",dtype:"TV",area:"Cầu thang",floor:"2",dept:"HEALING WORLD",spot:"TV Cầu thang 2 - Tầng 2",content:"Không sử dụng hình ảnh quận 3, quận 7",note:""},
+{id:"C2_021",dtype:"TV",area:"Cầu thang",floor:"3",dept:"HEALING WORLD",spot:"TV Cầu thang 3 - Tầng 3",content:"Không sử dụng hình ảnh quận 3, quận 7",note:""},
+{id:"C2_022",dtype:"TV",area:"Phòng K‑Pop / Yoga",floor:"3",dept:"HEALING WORLD",spot:"TV Phòng K‑Pop Yoga - Tầng 3",content:"(chưa phân nội dung – thêm sau)",note:""},
+{id:"C2_023",dtype:"Standee",area:"Cổng",floor:"G",dept:"NAIL",spot:"Thay mới decal nail cổng",content:"",note:"Đợt T7-T8/2026: Đã nhận decal 23/6, ĐÃ THAY 25/6"},
+{id:"C2_024",dtype:"Tentcard",area:"Phòng Nail",floor:"G",dept:"NAIL",spot:"Thay mới tentcard khuyến mãi nail",content:"",note:"Tình trạng: đã thay 19/6"},
+{id:"C2_025",dtype:"Tentcard",area:"Phòng Nail",floor:"G",dept:"NAIL",spot:"Thay mới tentcard khuyến mãi nail",content:"",note:"Tình trạng: đã thay 19/6"},
+{id:"C2_026",dtype:"Standee",area:"Cổng",floor:"G",dept:"HAIR",spot:"Thay mới decal hair cổng",content:"",note:"Đợt T7-T8/2026: Đã nhận decal 23/6, ĐÃ THAY 25/6"},
+{id:"C2_027",dtype:"Tentcard",area:"Phòng Hair",floor:"G",dept:"HAIR",spot:"Thay mới tentcard khuyến mãi hair (Dòng 1)",content:"",note:"Tình trạng: đã thay 19/6"},
+{id:"C2_028",dtype:"Tentcard",area:"Phòng Hair",floor:"G",dept:"HAIR",spot:"Thay mới tentcard khuyến mãi hair (Dòng 2)",content:"",note:"Tình trạng: đã thay 19/6"},
+{id:"C2_029",dtype:"Tentcard",area:"Phòng Hair",floor:"G",dept:"HAIR",spot:"Menu tóc bạc",content:"",note:"Tình trạng: áp dụng 19/6/2026 - đã áp dụng"},
+{id:"C2_030",dtype:"Standee",area:"Trước cửa Hair",floor:"G",dept:"HAIR",spot:"Thay hạn chương trình mới dán đè vào hạn cũ",content:"",note:"Đợt T7-T8/2026: Đã nhận decal 23/6, ĐÃ THAY 25/6"},
+{id:"C2_031",dtype:"Standee",area:"Khu sân vườn",floor:"G",dept:"MASSAGE CÁ",spot:"Standee cá cafe cá",content:"",note:"Yêu cầu mới đợt 14/4 (Khu vực Massage cá sân vườn)"},
+{id:"C2_032",dtype:"Standee",area:"Cầu thang",floor:"G-1",dept:"MASSAGE CÁ",spot:"Standee cá cầu thang tầng 1",content:"",note:"Đợt T7-T8/2026: đã thay hạn đến 31/7/2026"},
+{id:"C2_033",dtype:"Standee",area:"Cầu thang",floor:"1",dept:"NHÀ HÀNG GOLDEN KITCHEN",spot:"Standee nước mơ nước gạo snackbar",content:"",note:"Cầu thang tầng 1 phía Snackbar. Đợt T7-T8/2026: đã nhận standee mới 23/6"},
+{id:"C2_034",dtype:"Standee",area:"Cổng",floor:"G",dept:"HEALING WORLD",spot:"Thay mới u60 cổng",content:"",note:"Đợt T7-T8/2026: Không cần thay hạn HSD đến tháng 12. Lưu ý không để sai mã QR"},
+{id:"C2_035",dtype:"Standee",area:"Cổng",floor:"G",dept:"HEALING WORLD",spot:"Thay mới decal spa cổng",content:"",note:"Tình trạng: Đã thay. Đợt T7-T8/2026: Đã nhận decal 23/6, ĐÃ THAY 25/6 (Áp dụng toàn hệ thống)"},
+{id:"C2_036",dtype:"Standee",area:"Cổng",floor:"G",dept:"HEALING WORLD",spot:"Thay mới decal spa tầng hầm",content:"",note:"Đợt T7-T8/2026: Đã nhận decal 23/6, ĐÃ THAY 25/6"},
+{id:"C2_037",dtype:"Standee",area:"Sảnh",floor:"G",dept:"HEALING WORLD",spot:"Thay mới standee tổng hợp chương trình khuyến mãi",content:"",note:"Đợt T7-T8/2026: Chưa nhận"},
+{id:"C2_038",dtype:"Standee",area:"Sảnh",floor:"G",dept:"HEALING WORLD",spot:"Standee VIP đặt khu vực GIAN HÀNG",content:"",note:"Yêu cầu mới đợt 14/4"},
+{id:"C2_039",dtype:"Standee",area:"Cầu thang",floor:"G-1",dept:"HEALING WORLD",spot:"Standee Giới thiệu GYM",content:"",note:"SL: 2. Ghi chú đợt 14/4: Sau khi wording xong nội dung standee, nhờ team gửi cho ms Vy để confirm lại trước khi chuyển qua cho design. Thông tin tập gym cùng PT miễn phí + content wording thêm thông tin phòng GYM"},
+{id:"C2_040",dtype:"Standee",area:"Cầu thang",floor:"1",dept:"HEALING WORLD",spot:"Standee tiktok",content:"",note:"đã dán hạn mới"},
+{id:"C2_041",dtype:"Standee",area:"Không trưng bày",floor:"Q2",dept:"HEALING WORLD",spot:"Standee art gian hàng",content:"",note:"Ghi chú đợt 14/4: Đã cất vào phòng MKT Q2, SL: 1. Đợt T5-T6 & T7-T8: NGÀY 24/6 BÀN GIAO PHƯƠNG ANH VÀ MR TÂM ĐỂ THAY STANDEE TRỨNG VÀO CHƯA NHẬN ĐƯỢC TẤM STANDEE GIAN HÀNG CŨ"},
+{id:"C2_042",dtype:"Standee",area:"Không trưng bày",floor:"Q2",dept:"HEALING WORLD",spot:"Standee art snackbar",content:"",note:"Ghi chú đợt 14/4: Đã cất vào phòng MKT Q2, SL: 1"},
+{id:"C2_043",dtype:"Standee",area:"Snackbar",floor:"1",dept:"HEALING WORLD",spot:"Standee VIP SNACKBAR",content:"",note:"Yêu cầu mới đợt 14/4"}];
+const DTYPES=['TV','Standee','Tentcard','Khác'];
+let view='posm';
+let dfilter={dtype:'',branch:'',area:'',need:false,q:''};
+const FLOOR_ORDER={'B':0,'G':1,'G-1':2,'1':3,'2':4,'3':5};
+function dFloorOrd(f){return (f in FLOOR_ORDER)?FLOOR_ORDER[f]:9;}
+function dispArr(){return Object.values(store.tasks).filter(t=>t.kind==='display');}
+function dContent(t){return t.content||t.program||'';}
+function dDays(t){const d=parseDate(t.expire);if(!d)return null;const a=new Date();a.setHours(0,0,0,0);d.setHours(0,0,0,0);return Math.round((d-a)/86400000);}
+function dStatus(t){const n=dDays(t);
+  if(n===null)return{key:'none',label:'',pill:''};
+  if(n<0)return{key:'red',label:'Hết hạn '+(-n)+'n – cần đổi',pill:'over'};
+  if(n<=3)return{key:'amber',label:n===0?'Hết hạn hôm nay':'Còn '+n+'n',pill:'warn'};
+  return{key:'green',label:'Còn '+n+'n',pill:'ok'};}
+function switchView(v){view=v;
+  document.getElementById('tabPosm').classList.toggle('on',v==='posm');
+  document.getElementById('tabDisp').classList.toggle('on',v==='display');
+  const set=(id,s)=>{const e=document.getElementById(id);if(e)e.style.display=s?'':'none';};
+  const posm=(v==='posm');
+  ['posmProg','posmSearch','filt','board'].forEach(id=>set(id,posm));
+  set('displayWrap',!posm);set('btnTunhap',posm);set('btnExcel',posm);
+  render();}
+function dCardHTML(t){
+  const e=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const st=dStatus(t);
+  const pill=t.expire&&st.pill?'<span class="pillsm '+st.pill+'">'+e(st.label)+'</span>':'';
+  const content=dContent(t)?e(dContent(t)):'<i style="color:#bbb">chưa ghi nội dung</i>';
+  const sub=[t.floor?('Tầng '+e(t.floor)):'',t.dept?e(t.dept):''].filter(Boolean).join(' · ');
+  const cls=t.expire?st.key:'none';
+  const ty=(t.dtype||'').toLowerCase();
+  return '<div class="dcard '+cls+'" onclick="openDisplay(\''+t.taskId+'\')">'+
+    '<div class="dt"><span class="tytag ty-'+ty+'">'+(e(t.dtype)||'—')+'</span>'+(e(t.spot)||'(chưa đặt tên vị trí)')+'</div>'+
+    '<div class="dprog">'+content+'</div>'+
+    '<div class="dmeta">'+(sub?'<span>'+sub+'</span>':'')+pill+(t.duration?'<span class="dbadge2">⏱ '+e(t.duration)+'</span>':'')+'</div>'+
+    (t.img?'<img class="dcimg" src="'+t.img+'">':'')+'</div>';}
+function renderDisplays(){
+  const wrap=document.getElementById('displayWrap');if(!wrap)return;
+  const A=dispArr();
+  const we=A.filter(t=>t.expire);
+  const red=we.filter(t=>dStatus(t).key==='red').length;
+  const amber=we.filter(t=>dStatus(t).key==='amber').length;
+  const green=we.filter(t=>dStatus(t).key==='green').length;
+  document.getElementById('dSum').innerHTML=
+    '<div class="s" style="background:#eef0f2;color:#555">📦 Tổng '+A.length+'</div>'+
+    '<div class="s" style="background:#fbe9e9;color:#b3261e">🔴 Cần đổi '+red+'</div>'+
+    '<div class="s" style="background:#fcf3df;color:#9a6b12">🟠 Sắp hết hạn '+amber+'</div>'+
+    '<div class="s" style="background:#e7f3ec;color:#2f7d4f">🟢 Còn hạn '+green+'</div>';
+  const branches=[...new Set(A.map(t=>t.branch).filter(Boolean))].sort();
+  const areas=[...new Set(A.map(t=>t.area).filter(Boolean))].sort();
+  document.getElementById('dCtrl').innerHTML=
+    '<select onchange="dfilter.dtype=this.value;renderDisplays()"><option value="">Tất cả loại</option>'+DTYPES.map(d=>'<option '+(dfilter.dtype===d?'selected':'')+'>'+d+'</option>').join('')+'</select>'+
+    '<select onchange="dfilter.branch=this.value;renderDisplays()"><option value="">Tất cả quận</option>'+branches.map(b=>'<option '+(dfilter.branch===b?'selected':'')+'>'+b+'</option>').join('')+'</select>'+
+    '<select onchange="dfilter.area=this.value;renderDisplays()"><option value="">Tất cả khu vực</option>'+areas.map(a=>'<option '+(dfilter.area===a?'selected':'')+'>'+a+'</option>').join('')+'</select>'+
+    '<button class="pill '+(dfilter.need?'on red':'')+'" onclick="dfilter.need=!dfilter.need;renderDisplays()">⚠️ Cần đổi</button>'+
+    '<div style="flex:1"></div>'+
+    '<button class="btn primary" onclick="addDisplay()">➕ Thêm</button>'+
+    '<button class="btn" onclick="loadCatalogQ2()">📥 Nạp danh mục Q2</button>'+
+    '<button class="btn" onclick="exportDisplayExcel()">📊 Excel</button>';
+  const e=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const q=(dfilter.q||'').toLowerCase().trim();
+  let items=A.filter(t=>{
+    if(dfilter.dtype&&t.dtype!==dfilter.dtype)return false;
+    if(dfilter.branch&&t.branch!==dfilter.branch)return false;
+    if(dfilter.area&&t.area!==dfilter.area)return false;
+    if(dfilter.need){const k=dStatus(t).key;if(k!=='red'&&k!=='amber')return false;}
+    if(q){const hay=[t.dtype,t.branch,t.area,t.floor,t.dept,t.spot,dContent(t),t.note].join(' ').toLowerCase();if(!hay.includes(q))return false;}
+    return true;});
+  const sc=document.getElementById('dSearchCount');if(sc)sc.textContent=q?(items.length+' kết quả'):'';
+  const list=document.getElementById('dList');
+  if(!A.length){list.innerHTML='<div style="padding:30px;text-align:center;color:#8a857d">Chưa có mục nào.<br>Bấm <b>📥 Nạp danh mục Q2</b> để nạp sẵn toàn bộ vị trí TV/Standee/Tentcard ở Quận 2, hoặc <b>➕ Thêm</b> từng mục.</div>';return;}
+  if(!items.length){list.innerHTML='<div style="padding:24px;text-align:center;color:#8a857d">Không có mục khớp bộ lọc.</div>';return;}
+  const byB={};items.forEach(t=>{const b=t.branch||'Không rõ';(byB[b]=byB[b]||[]).push(t);});
+  const bKeys=Object.keys(byB).sort((a,b)=>{let ia=BR_LIST.indexOf(a),ib=BR_LIST.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
+  list.innerHTML=bKeys.map(b=>{
+    const arr2=byB[b];const byA={};arr2.forEach(t=>{const a=t.area||'(chưa phân khu)';(byA[a]=byA[a]||[]).push(t);});
+    const aKeys=Object.keys(byA).sort((x,y)=>{const fx=Math.min.apply(null,byA[x].map(t=>dFloorOrd(t.floor)));const fy=Math.min.apply(null,byA[y].map(t=>dFloorOrd(t.floor)));if(fx!==fy)return fx-fy;return x.localeCompare(y);});
+    const inner=aKeys.map(a=>{
+      const cards=byA[a].sort((x,y)=>(dDays(x)??9999)-(dDays(y)??9999)).map(dCardHTML).join('');
+      return '<div class="darea">'+e(a)+'</div><div class="dgrid">'+cards+'</div>';}).join('');
+    return '<div class="dbranch">'+e(b)+' <span style="font-weight:500;color:#8a857d">('+arr2.length+')</span></div>'+inner;}).join('');}
+function nextDispNum(){let m=0;Object.keys(store.tasks).forEach(k=>{const mm=/^D(\d+)$/.exec(k);if(mm)m=Math.max(m,+mm[1]);});return m+1;}
+function addDisplay(){
+  const id='D'+String(nextDispNum()).padStart(2,'0');
+  store.tasks[id]={taskId:id,kind:'display',dtype:'Standee',branch:dfilter.branch||'Quận 2',area:'',floor:'',dept:'',spot:'',content:'',duration:'',expire:'',note:'',img:'',updated:todayStr(0)};
+  save();queuePush(id);renderDisplays();openDisplay(id);}
+function loadCatalogQ2(){
+  let n=0;CATALOG_Q2.forEach(c=>{if(store.tasks[c.id])return;store.tasks[c.id]={taskId:c.id,kind:'display',branch:'Quận 2',dtype:c.dtype,area:c.area,floor:c.floor,dept:c.dept,spot:c.spot,content:c.content||'',duration:'',expire:'',note:c.note||'',img:'',updated:todayStr(0)};queuePush(c.id);n++;});
+  save();renderDisplays();toast(n?('Đã nạp '+n+' mục danh mục Q2'):'Danh mục Q2 đã có sẵn');}
+function openDisplay(id){
+  const t=store.tasks[id];if(!t)return;
+  const a=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const e=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const st=dStatus(t);
+  const statusHtml=t.expire?(st.pill?'<span class="pillsm '+st.pill+'">'+e(st.label)+'</span>':'<span class="pillsm">'+e(st.label)+'</span>'):'<span style="color:#999">— không đặt hạn —</span>';
+  document.getElementById('drawTitle').textContent=(t.dtype||'Mục')+(t.spot?' · '+t.spot:'');
+  const dtypeOpt=DTYPES.map(d=>'<option '+(t.dtype===d?'selected':'')+'>'+d+'</option>').join('');
+  const brOpt=BR_LIST.map(b=>'<option '+(t.branch===b?'selected':'')+'>'+b+'</option>').join('');
+  const imgBlock=t.img
+    ?'<img class="thumb" src="'+t.img+'"><div style="margin-top:6px;display:flex;gap:8px"><button class="btn sm" onclick="document.getElementById(\'dimg_'+id+'\').click()">Đổi hình</button><button class="btn sm" style="border-color:#f0c2bd;color:var(--red)" onclick="removeImg(\''+id+'\')">Xóa hình</button></div>'
+    :'<button class="btn" onclick="document.getElementById(\'dimg_'+id+'\').click()">📎 Chọn hình</button>';
+  document.getElementById('drawBody').innerHTML=
+    '<div class="two"><div class="fld"><label>Loại</label><select onchange="upd(\''+id+'\',\'dtype\',this.value);renderDisplays()">'+dtypeOpt+'</select></div>'+
+      '<div class="fld"><label>Quận / chi nhánh</label><select onchange="upd(\''+id+'\',\'branch\',this.value);openDisplay(\''+id+'\');renderDisplays()">'+brOpt+'</select></div></div>'+
+    '<div class="two"><div class="fld"><label>Khu vực</label><input value="'+a(t.area)+'" placeholder="vd Sảnh chờ, Bathhouse, Cầu thang" onchange="upd(\''+id+'\',\'area\',this.value);renderDisplays()"></div>'+
+      '<div class="fld"><label>Tầng</label><input value="'+a(t.floor)+'" placeholder="G, 1, 2, 3, B" onchange="upd(\''+id+'\',\'floor\',this.value);renderDisplays()"></div></div>'+
+    '<div class="fld"><label>Bộ phận</label><input value="'+a(t.dept)+'" placeholder="HEALING WORLD, NHÀ HÀNG, NAIL, HAIR…" onchange="upd(\''+id+'\',\'dept\',this.value)"></div>'+
+    '<div class="fld"><label>Vị trí / tên màn hình</label><input value="'+a(t.spot)+'" placeholder="vd Tivi Sảnh chờ NGANG 1" onchange="upd(\''+id+'\',\'spot\',this.value);renderDisplays()"></div>'+
+    '<div class="fld"><label>Nội dung đang hiển thị</label><textarea onchange="upd(\''+id+'\',\'content\',this.value);renderDisplays()">'+e(dContent(t))+'</textarea></div>'+
+    '<div class="two"><div class="fld"><label>Thời lượng (TV)</label><input value="'+a(t.duration)+'" placeholder="vd 10p" onchange="upd(\''+id+'\',\'duration\',this.value);renderDisplays()"></div>'+
+      '<div class="fld"><label>Hạn cần đổi (nếu có)</label><input value="'+a(t.expire)+'" placeholder="vd 31/7/2026" onchange="upd(\''+id+'\',\'expire\',this.value.trim());openDisplay(\''+id+'\');renderDisplays()"></div></div>'+
+    '<div class="fld"><label>Trạng thái hạn</label><div class="v">'+statusHtml+'</div></div>'+
+    '<div class="fld"><label>Hình minh hoạ</label>'+imgBlock+'<input type="file" id="dimg_'+id+'" accept="image/*" style="display:none" onchange="attachImg(\''+id+'\',this)"></div>'+
+    '<div class="fld"><label>Ghi chú / tình trạng</label><textarea onchange="upd(\''+id+'\',\'note\',this.value)">'+e(t.note)+'</textarea></div>'+
+    '<div class="fld"><label>Cập nhật gần nhất</label><div class="v">'+(t.updated?fmtVN(t.updated):'—')+'</div></div>'+
+    '<div class="divider"></div>'+
+    '<button class="flagbtn" style="width:100%" onclick="markChanged(\''+id+'\')">✅ Đã đổi xong (xoá hạn)</button>'+
+    '<button class="flagbtn" id="delBtn" style="width:100%;margin-top:10px;border-color:#f0c2bd;color:var(--red)" onclick="delDisplay(\''+id+'\')">🗑 Xóa mục này</button>';
+  openScrim();}
+function markChanged(id){const t=store.tasks[id];if(!t)return;t.expire='';t.updated=todayStr(0);save();queuePush(id);openDisplay(id);renderDisplays();toast('Đã đánh dấu đã đổi (xoá hạn)');}
+function delDisplay(id){const b=document.getElementById('delBtn');if(!b)return;if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='Bấm lần nữa để xóa hẳn';return;}pushDelete(id);delete store.tasks[id];save();closeDraw();renderDisplays();toast('Đã xóa mục');}
+function exportDisplayExcel(){
+  const A=dispArr();if(!A.length)return toast('Chưa có mục để xuất');
+  const header=['Loại','Quận','Khu vực','Tầng','Bộ phận','Vị trí','Nội dung hiển thị','Thời lượng','Hạn cần đổi','Trạng thái','Ghi chú'];
+  const rows=A.map(t=>[t.dtype||'',t.branch||'',t.area||'',t.floor||'',t.dept||'',t.spot||'',dContent(t),t.duration||'',t.expire||'',(t.expire?dStatus(t).label:''),t.note||'']);
+  if(typeof XLSX==='undefined'){const csv=[header,...rows].map(r=>r.map(c=>'"'+(''+c).replace(/"/g,'""')+'"').join(',')).join('\n');const bl=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const x=document.createElement('a');x.href=URL.createObjectURL(bl);x.download='Standee_TV_'+ds()+'.csv';x.click();return toast('Đã xuất CSV');}
+  const aoa=[['QUẢN LÝ STANDEE / TENTCARD / TV — '+new Date().toLocaleDateString('vi-VN')],[],header,...rows];
+  const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:header.length-1}}];
+  ws['!cols']=[{wch:9},{wch:9},{wch:16},{wch:6},{wch:18},{wch:24},{wch:30},{wch:10},{wch:12},{wch:18},{wch:28}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Standee-Tentcard-TV');XLSX.writeFile(wb,'Standee_TV_'+ds()+'.xlsx');toast('Đã xuất Excel');}
+/* ============================================================================== */
+
+/* ---------- đăng nhập (1 lần / ngày trên máy này) ---------- */
+function todayISO(){return new Date().toISOString().slice(0,10);}
+function sessionUser(){try{const s=JSON.parse(localStorage.getItem('posm_session'));if(s&&s.day===todayISO())return s;}catch(e){}return null;}
+function doLogin(){
+  const u=(document.getElementById('lgU').value||'').trim();
+  const p=(document.getElementById('lgP').value||'');
+  const acc=ACCOUNTS.find(a=>a.u.toLowerCase()===u.toLowerCase()&&a.p===p);
+  if(!acc){document.getElementById('lgErr').textContent='Sai ID hoặc mật khẩu';return;}
+  try{localStorage.setItem('posm_session',JSON.stringify({u:acc.u,name:acc.name,day:todayISO()}));}catch(e){}
+  startApp();}
+function logout(){try{localStorage.removeItem('posm_session');}catch(e){}location.reload();}
+function startApp(){const g=document.getElementById('loginGate');if(g)g.style.display='none';render();initShared();}
+function boot(){if(sessionUser()){startApp();}else{const g=document.getElementById('loginGate');if(g)g.style.display='flex';const u=document.getElementById('lgU');if(u)u.focus();}}
+boot();
 </script>
 </body>
 </html>
