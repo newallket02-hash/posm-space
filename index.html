@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>POSM · Kanban GLH</title>
+<title>POSM Ms Trúc</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -124,6 +124,15 @@ input.search:focus,select.f:focus{outline:none;border-color:var(--gold)}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:.2s;z-index:60;pointer-events:none}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-decoration:underline}
+  .pcard{border:1px solid #e8e2d6;border-radius:12px;padding:10px;margin-bottom:10px;background:#fff}
+  .pcard .pn{width:100%;margin-bottom:6px;font-weight:600}
+  .pcard .pg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}
+  .pcard .pg2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+  .pcard select,.pcard input,.pcard textarea{width:100%;padding:7px 8px;border:1px solid #e0d8c8;border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box}
+  .pcard textarea{min-height:54px;resize:vertical}
+  .pcard .rm{margin-top:2px;background:#fbeaea;border:1px solid #f0c2bd;color:#b3261e;border-radius:8px;padding:7px 10px;width:100%;cursor:pointer}
+  .thumb{max-width:100%;max-height:200px;border-radius:10px;border:1px solid #e8e2d6;display:block}
+  .cimg{height:48px;width:auto;max-width:100%;object-fit:cover;border-radius:6px;margin-top:6px;display:block}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -131,7 +140,7 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
 
 <div class="head">
   <div class="row1">
-    <div class="brand">Golden <b>Lotus</b> · POSM<span>Kanban theo tiến độ</span></div>
+    <div class="brand">POSM <b>Ms Trúc</b><span>Quản lý tiến độ POSM</span></div>
     <div class="sp"></div>
     <button class="btn primary" onclick="saveAll()">💾 Lưu</button>
     <button class="btn" onclick="pullShared()">🔄 Tải mới</button>
@@ -172,6 +181,7 @@ const COLS=[
 ];
 const COL_IDS=COLS.map(c=>c.id);
 const PRIOS=['Gấp','Trung bình','Bình thường','—'];
+const BR_LIST=['Quận 2','Quận 7','Quận 1','Thủ Đức','Đà Nẵng','Khác','Không rõ'];
 const BRANCHES=['Healing World Q2','Nhà hàng Quận 2','Healing Land Q7','Q7','Quận 1','Thủ Đức','Đà Nẵng','Khác'];
 const BRANCH_COLORS={
   'Quận 2':{bg:'#e3f1e8',fg:'#2f7d4f'}, 'Quận 7':{bg:'#e6edfb',fg:'#3556a8'},
@@ -188,7 +198,7 @@ let dragId=null;
 /* ---------- data ---------- */
 function load(){
   let s;try{s=JSON.parse(localStorage.getItem(KEY));}catch(e){}
-  if(!s||!s.tasks)s={tasks:seed(),savedAt:null};
+  if(!s||!s.tasks)s={tasks:{},savedAt:null};
   Object.values(s.tasks).forEach(t=>{if(!t.col)t.col=bucket(t.stage);});  // migrate v3 stage→col
   ensureUpdated(s.tasks);
   return s;
@@ -303,6 +313,7 @@ function cardHTML(t){
     <div class="nm">${esc(t.name)||'(chưa có tên SP)'}</div>
     <div class="mt"><span class="brtag" style="${brCss(t.branch)}">${esc(t.branch)||'—'}</span><span>${esc(t.pdx)||'—'}</span>${gap}${dlp}${demo}</div>
     ${t.updated?`<div class="upd">cập nhật ${fmtVN(t.updated)}</div>`:''}
+    ${t.img?`<img class="cimg" src="${t.img}">`:''}
     <div class="arrows" onclick="event.stopPropagation()">
       <button class="arrow" ${i<=0?'disabled':''} onclick="move('${t.taskId}',-1)">◀</button>
       <button class="arrow" ${i>=COL_IDS.length-1?'disabled':''} onclick="move('${t.taskId}',1)">▶</button>
@@ -323,31 +334,59 @@ function setTag(t){filter.tag=(filter.tag===t&&t!=='all')?'all':t;render();}
 function onSearch(v){filter.q=v;render();}
 function clearSearch(){filter.q='';const el=document.getElementById('searchInput');if(el)el.value='';render();}
 
+/* ---------- chỉnh sửa field + hình ---------- */
+function upd(id,k,v){if(!store.tasks[id])return;store.tasks[id][k]=v;store.tasks[id].updated=todayStr(0);save();queuePush(id);}
+function attachImg(id,inp){
+  const file=inp.files&&inp.files[0];if(!file)return;
+  const rd=new FileReader();
+  rd.onload=e=>{const im=new Image();
+    im.onload=()=>{const max=480;let w=im.width,h2=im.height;
+      if(w>h2&&w>max){h2=Math.round(h2*max/w);w=max;}else if(h2>=w&&h2>max){w=Math.round(w*max/h2);h2=max;}
+      const cv=document.createElement('canvas');cv.width=w;cv.height=h2;cv.getContext('2d').drawImage(im,0,0,w,h2);
+      let data;try{data=cv.toDataURL('image/jpeg',0.6);}catch(err){data=e.target.result;}
+      store.tasks[id].img=data;store.tasks[id].updated=todayStr(0);save();openTask(id);render();queuePush(id);toast('Đã đính kèm hình');};
+    im.onerror=()=>toast('Ảnh lỗi');im.src=e.target.result;};
+  rd.readAsDataURL(file);
+}
+function removeImg(id){delete store.tasks[id].img;store.tasks[id].updated=todayStr(0);save();openTask(id);render();queuePush(id);toast('Đã xóa hình');}
+
 /* ---------- task detail drawer ---------- */
 function openTask(id){
-  const t=store.tasks[id];const esc=s=>(s||'').replace(/</g,'&lt;');
-  document.getElementById('drawTitle').textContent=t.name||t.taskId;
+  const t=store.tasks[id];const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const escAt=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  document.getElementById('drawTitle').innerHTML=`<input value="${escAt(t.name)}" placeholder="Tên task…" style="width:100%;font:inherit;font-weight:800;color:inherit;border:none;border-bottom:1px dashed #d8ccb0;background:transparent;padding:2px 0" onchange="upd('${id}','name',this.value);render()">`;
   const opt=(arrv,cur)=>arrv.map(x=>`<option ${x===cur?'selected':''}>${x}</option>`).join('');
   const colOpt=COLS.map(c=>`<option value="${c.id}" ${t.col===c.id?'selected':''}>${c.label}</option>`).join('');
+  const brOpt=BR_LIST.map(b=>`<option ${t.branch===b?'selected':''}>${b}</option>`).join('');
+  const escA=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
   const dl=daysLeft(t);
   document.getElementById('drawBody').innerHTML=`
     <div class="two">
       <div class="fld"><label>Khâu / tiến độ</label><select id="d_col" onchange="setCol('${id}',this.value)">${colOpt}</select></div>
       <div class="fld"><label>Ưu tiên</label><select id="d_prio" onchange="store.tasks['${id}'].prio=this.value;store.tasks['${id}'].updated=todayStr(0);save();render();queuePush('${id}')">${opt(PRIOS,t.prio||'—')}</select></div>
     </div>
+    <div class="fld"><label>Tên task / sản phẩm (sửa trực tiếp)</label><input value="${escA(t.name)}" onchange="upd('${id}','name',this.value);document.getElementById('drawTitle').textContent=this.value||'${id}';render()"></div>
     <div class="two">
-      <div class="fld"><label>Chi nhánh</label><div class="v"><span class="brtag" style="${brCss(t.branch)}">${esc(t.branch)||'—'}</span></div></div>
+      <div class="fld"><label>Chi nhánh</label><select onchange="upd('${id}','branch',this.value);render()">${brOpt}</select></div>
       <div class="fld"><label>Deadline ${dl!==null&&!isDone(t)?`<span class="pillsm ${dl<0?'over':dl<=2?'warn':'ok'}">${dl<0?'TRỄ '+(-dl)+'n':dl===0?'hôm nay':'còn '+dl+'n'}</span>`:''}</label>
-        <input id="d_deadline" value="${esc(t.deadline)}" placeholder="vd 28/6/2026" onchange="store.tasks['${id}'].deadline=this.value.trim();store.tasks['${id}'].updated=todayStr(0);save();openTask('${id}');render();queuePush('${id}')"></div>
+        <input id="d_deadline" value="${escA(t.deadline)}" placeholder="vd 28/6/2026" onchange="upd('${id}','deadline',this.value.trim());openTask('${id}');render()"></div>
     </div>
-    <div class="fld"><label>Số PĐX · Người đề xuất · Ngày đề xuất</label><div class="v">PĐX ${esc(t.pdx)||'—'} · ${esc(t.requester)||'—'} · ${esc(t.proposed)||'—'}${t.pdxLink?` · <a class="dl" href="${t.pdxLink}" target="_blank" rel="noopener">📄 mở phiếu</a>`:''}</div></div>
-    <div class="fld"><label>Ngày cập nhật gần nhất</label><div class="v">${t.updated?fmtVN(t.updated):'—'}</div></div>
-    <div class="fld"><label>Nội dung chi tiết</label><div class="v">${esc(t.detail)||'—'}</div></div>
     <div class="two">
-      <div class="fld"><label>Kích thước / màu</label><div class="v">${esc(t.size)||'—'}</div></div>
-      <div class="fld"><label>Mục đích</label><div class="v">${esc(t.purpose)||'—'}</div></div>
+      <div class="fld"><label>Mã PĐX</label><input value="${escA(t.pdx)}" placeholder="vd PDX096" onchange="upd('${id}','pdx',this.value.trim());render()"></div>
+      <div class="fld"><label>Người phụ trách</label><input value="${escA(t.requester)}" placeholder="vd Ms Trúc" onchange="upd('${id}','requester',this.value.trim())"></div>
     </div>
-    <div class="fld"><label>Ghi chú (cập nhật được)</label><textarea id="d_note" onchange="store.tasks['${id}'].note=this.value;store.tasks['${id}'].updated=todayStr(0);save();queuePush('${id}')">${esc(t.note)}</textarea></div>
+    <div class="fld"><label>Nội dung chi tiết</label><textarea onchange="upd('${id}','detail',this.value)">${esc(t.detail)}</textarea></div>
+    <div class="two">
+      <div class="fld"><label>Kích thước / màu</label><input value="${escA(t.size)}" onchange="upd('${id}','size',this.value)"></div>
+      <div class="fld"><label>Mục đích</label><input value="${escA(t.purpose)}" onchange="upd('${id}','purpose',this.value)"></div>
+    </div>
+    <div class="fld"><label>Hình đính kèm</label>
+      ${t.img?`<img class="thumb" src="${t.img}"><div style="margin-top:6px;display:flex;gap:8px"><button class="btn sm" onclick="document.getElementById('imgf_${id}').click()">Đổi hình</button><button class="btn sm" style="border-color:#f0c2bd;color:var(--red)" onclick="removeImg('${id}')">Xóa hình</button></div>`
+        :`<button class="btn" onclick="document.getElementById('imgf_${id}').click()">📎 Chọn hình từ máy / điện thoại</button>`}
+      <input type="file" id="imgf_${id}" accept="image/*" style="display:none" onchange="attachImg('${id}',this)"></div>
+    <div class="fld"><label>PĐX gốc · Người đề xuất · Ngày đề xuất</label><div class="v">${escA(t.pdx)||'—'} · ${escA(t.requester)||'—'} · ${escA(t.proposed)||'—'}${t.pdxLink?` · <a class="dl" href="${t.pdxLink}" target="_blank" rel="noopener">📄 mở phiếu</a>`:''}</div></div>
+    <div class="fld"><label>Ngày cập nhật gần nhất</label><div class="v">${t.updated?fmtVN(t.updated):'—'}</div></div>
+    <div class="fld"><label>Ghi chú</label><textarea id="d_note" onchange="store.tasks['${id}'].note=this.value;store.tasks['${id}'].updated=todayStr(0);save();queuePush('${id}')">${esc(t.note)}</textarea></div>
     <div class="divider"></div>
     <div class="two">
       <button class="flagbtn ${t.stuck?'on':''}" id="d_stuck" onclick="store.tasks['${id}'].stuck=!store.tasks['${id}'].stuck;store.tasks['${id}'].updated=todayStr(0);save();openTask('${id}');render();queuePush('${id}')">⚠ ${t.stuck?'Bỏ đánh dấu kẹt':'Đánh dấu kẹt'}</button>
@@ -369,14 +408,14 @@ function openDraw(kind){
       <div class="divider"></div>
       <div class="hint">Cột <code>Tiến độ</code> trong Sheet sẽ tự xếp vào đúng khâu Kanban. Để trống thì giữ nguyên trạng thái chị đang chỉnh.</div>`;
   }else if(kind==='add'){
-    T.textContent='Tự nhập — app phân loại';
+    T.textContent='Tự nhập task';pending=[];
     B.innerHTML=`<div class="hint">Gõ/dán nội dung theo ý chị. <b>Mỗi dòng = 1 task</b> (hoặc mỗi đoạn cách nhau bằng dòng trống = 1 task nếu task nhiều dòng). App tự đoán <b>chi nhánh · ưu tiên · khâu · mã PDX · người</b> rồi cho chị sửa trước khi thêm.</div>
       <textarea class="paste" id="addBox" placeholder="Ví dụ — gõ tự nhiên:
 Menu A4 Mr BBQ cho Q7, gấp, 3 ngôn ngữ
 Standee đổi KM tháng 7 Q2 PDX096
 Decal phòng sauna Q2, Ms Thủy, chờ duyệt
 Brochure cá Aqua Cafe Q2 đang làm"></textarea>
-      <div style="margin:10px 0;display:flex;gap:8px"><button class="btn primary" onclick="parseAdd()">⚙ Phân loại</button><button class="btn" onclick="closeDraw()">Hủy</button></div>
+      <div style="margin:10px 0;display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="parseAdd()">⚙ Phân loại</button><button class="btn" onclick="addBlank()">＋ Nhập tay 1 task</button><button class="btn" onclick="closeDraw()">Hủy</button></div>
       <div id="addPreview"></div>`;
   }else{
     T.textContent='Dữ liệu';const n=arr().length,d=arr().filter(x=>x.demo).length;
@@ -577,21 +616,29 @@ function parseAdd(){
 }
 function renderPreview(){
   const el=document.getElementById('addPreview');if(!el)return;
-  if(!pending.length){el.innerHTML='<div class="hint">Chưa có task nào — bấm Phân loại.</div>';return;}
-  const brList=['Quận 2','Quận 7','Quận 1','Thủ Đức','Đà Nẵng','Không rõ'];
-  const brOpt=p=>brList.map(b=>`<option ${p.branch===b?'selected':''}>${b}</option>`).join('');
+  if(!pending.length){el.innerHTML='<div class="hint">Chưa có task — gõ/dán rồi bấm <b>Phân loại</b>, hoặc bấm <b>＋ Nhập tay 1 task</b>.</div>';return;}
+  const e=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const brOpt=p=>BR_LIST.map(b=>`<option ${p.branch===b?'selected':''}>${b}</option>`).join('');
   const colOpt=p=>COLS.map(c=>`<option value="${c.id}" ${p.col===c.id?'selected':''}>${c.label}</option>`).join('');
   const prOpt=p=>PRIOS.map(x=>`<option ${p.prio===x?'selected':''}>${x}</option>`).join('');
-  el.innerHTML=`<div class="hint" style="margin:4px 0 8px"><b>${pending.length}</b> task — sửa lại nếu app đoán sai:</div>`+
-    pending.map((p,i)=>`<div class="prow">
-      <input class="pn" value="${(p.name||'').replace(/"/g,'&quot;')}" onchange="pending[${i}].name=this.value">
-      <select onchange="pending[${i}].branch=this.value">${brOpt(p)}</select>
-      <select onchange="pending[${i}].col=this.value">${colOpt(p)}</select>
-      <select onchange="pending[${i}].prio=this.value">${prOpt(p)}</select>
-      <button class="rm" onclick="pending.splice(${i},1);renderPreview()">✕</button>
+  el.innerHTML=`<div class="hint" style="margin:4px 0 8px"><b>${pending.length}</b> task — kiểm tra & sửa rồi bấm Thêm:</div>`+
+    pending.map((p,i)=>`<div class="pcard">
+      <input class="pn" placeholder="Tên task / sản phẩm" value="${e(p.name)}" onchange="pending[${i}].name=this.value">
+      <div class="pg3">
+        <select onchange="pending[${i}].branch=this.value">${brOpt(p)}</select>
+        <select onchange="pending[${i}].col=this.value">${colOpt(p)}</select>
+        <select onchange="pending[${i}].prio=this.value">${prOpt(p)}</select>
+      </div>
+      <div class="pg2">
+        <input placeholder="Người phụ trách" value="${e(p.requester)}" onchange="pending[${i}].requester=this.value">
+        <input placeholder="Mã PĐX" value="${e(p.pdx)}" onchange="pending[${i}].pdx=this.value">
+      </div>
+      <textarea placeholder="Nội dung chi tiết" onchange="pending[${i}].detail=this.value">${e(p.detail)}</textarea>
+      <button class="rm" onclick="pending.splice(${i},1);renderPreview()">✕ Bỏ task này</button>
     </div>`).join('')+
-    `<button class="btn primary" style="width:100%;margin-top:6px" onclick="commitAdd()">➕ Thêm ${pending.length} task vào board</button>`;
+    `<div style="display:flex;gap:8px;margin-top:8px"><button class="btn" onclick="addBlank()">＋ Thêm dòng</button><button class="btn primary" style="flex:1" onclick="commitAdd()">➕ Thêm ${pending.length} task vào board</button></div>`;
 }
+function addBlank(){pending.push({name:'',detail:'',branch:'Không rõ',prio:'—',col:'intake',pdx:'',requester:'',proposed:'',deadline:''});renderPreview();}
 function nextManualNum(){let mx=0;arr().forEach(t=>{const m=/^M(\d+)$/.exec(t.taskId);if(m)mx=Math.max(mx,+m[1]);});return mx+1;}
 function commitAdd(){
   if(!pending.length)return toast('Chưa có task');
