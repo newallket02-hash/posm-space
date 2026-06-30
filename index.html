@@ -171,6 +171,17 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
 .ptable .pcell:focus{background:#fff7e6;box-shadow:inset 0 0 0 2px var(--gold-soft)}
 .ptable tr:hover td{background:#fcfbf7}
 .btn.sm{padding:2px 8px;font-size:11px}
+
+/* === image drag-drop zone + lightbox (added) === */
+.imgdz{border:2px dashed #cdbfa0;border-radius:10px;padding:14px;text-align:center;
+  color:#9a8c70;font-size:13px;margin:6px 0;cursor:pointer;outline:none;transition:.15s}
+.imgdz:focus{border-color:#caa45a;background:#fbf6ea}
+.imgdz.dzover{border-color:#caa45a;background:#f5ecd6;color:#6b5a37}
+.lbox{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;
+  align-items:center;justify-content:center;z-index:9999;cursor:zoom-out;padding:24px}
+.lbox.on{display:flex}
+.lbox img{max-width:95vw;max-height:95vh;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.cimg,.thumb{cursor:zoom-in}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -391,7 +402,7 @@ function cardHTML(t){
     <div class="nm">${esc(t.name)||'(chưa có tên SP)'}</div>
     <div class="mt"><span class="brtag" style="${brCss(t.branch)}">${esc(t.branch)||'—'}</span><span>${esc(t.pdx)||'—'}</span>${gap}${dlp}${demo}</div>
     ${t.updated?`<div class="upd">cập nhật ${fmtVN(t.updated)}</div>`:''}
-    ${t.img?`<img class="cimg" src="${t.img}">`:''}
+    ${t.img?`<img class="cimg" src="${t.img}" onclick="event.stopPropagation();zoomImg('${t.img}')">`:''}
     <div class="arrows" onclick="event.stopPropagation()">
       <button class="arrow" ${i<=0?'disabled':''} onclick="move('${t.taskId}',-1)">◀</button>
       <button class="arrow" ${i>=COL_IDS.length-1?'disabled':''} onclick="move('${t.taskId}',1)">▶</button>
@@ -415,6 +426,48 @@ function clearSearch(){filter.q='';const el=document.getElementById('searchInput
 
 /* ---------- chỉnh sửa field + hình ---------- */
 function upd(id,k,v){if(!store.tasks[id])return;store.tasks[id][k]=v;store.tasks[id].updated=todayStr(0);save();queuePush(id);}
+
+// === image drag-drop / paste / lightbox helpers (added) ===
+function feedImg(id,file){
+  if(!file || !/^image\//.test(file.type)){ toast('Chỉ nhận file ảnh'); return; }
+  const inp=document.getElementById('imgf_'+id);
+  if(!inp){ return; }
+  const dt=new DataTransfer();
+  dt.items.add(file);
+  inp.files=dt.files;
+  attachImg(id,inp);
+}
+function imgDrop(e,id){
+  e.preventDefault(); e.stopPropagation();
+  e.currentTarget.classList.remove('dzover');
+  const f=e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if(f) feedImg(id,f);
+}
+function imgDragOver(e){ e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.add('dzover'); }
+function imgDragLeave(e){ e.currentTarget.classList.remove('dzover'); }
+function imgPaste(e,id){
+  const items=(e.clipboardData || window.clipboardData)?.items || [];
+  for(const it of items){
+    if(it.type && it.type.indexOf('image')===0){
+      const f=it.getAsFile();
+      if(f){ e.preventDefault(); feedImg(id,f); break; }
+    }
+  }
+}
+function zoomImg(src){
+  let ov=document.getElementById('imgLightbox');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='imgLightbox';
+    ov.className='lbox';
+    ov.onclick=()=>{ ov.classList.remove('on'); };
+    ov.innerHTML='<img>';
+    document.body.appendChild(ov);
+    document.addEventListener('keydown', ev=>{ if(ev.key==='Escape') ov.classList.remove('on'); });
+  }
+  ov.querySelector('img').src=src;
+  ov.classList.add('on');
+}
 function attachImg(id,inp){
   const file=inp.files&&inp.files[0];if(!file)return;
   const rd=new FileReader();
@@ -460,8 +513,8 @@ function openTask(id){
       <div class="fld"><label>Mục đích</label><input value="${escA(t.purpose)}" onchange="upd('${id}','purpose',this.value)"></div>
     </div>
     <div class="fld"><label>Hình đính kèm</label>
-      ${t.img?`<img class="thumb" src="${t.img}"><div style="margin-top:6px;display:flex;gap:8px"><button class="btn sm" onclick="document.getElementById('imgf_${id}').click()">Đổi hình</button><button class="btn sm" style="border-color:#f0c2bd;color:var(--red)" onclick="removeImg('${id}')">Xóa hình</button></div>`
-        :`<button class="btn" onclick="document.getElementById('imgf_${id}').click()">📎 Chọn hình từ máy / điện thoại</button>`}
+      ${t.img?`<img class="thumb" src="${t.img}" onclick="zoomImg('${t.img}')"><div style="margin-top:6px;display:flex;gap:8px"><button class="btn sm" onclick="document.getElementById('imgf_${id}').click()">Đổi hình</button><button class="btn sm" style="border-color:#f0c2bd;color:var(--red)" onclick="removeImg('${id}')">Xóa hình</button></div>`
+        :`<div class="imgdz" tabindex="0" ondrop="imgDrop(event,'${id}')" ondragover="imgDragOver(event)" ondragleave="imgDragLeave(event)" onpaste="imgPaste(event,'${id}')">🖼️ Kéo–thả ảnh vào đây, hoặc bấm vào ô này rồi dán (Ctrl+V)</div><button class="btn" onclick="document.getElementById('imgf_${id}').click()">📎 Chọn hình từ máy / điện thoại</button>`}
       <input type="file" id="imgf_${id}" accept="image/*" style="display:none" onchange="attachImg('${id}',this)"></div>
     <div class="fld"><label>PĐX gốc · Người đề xuất · Ngày đề xuất</label><div class="v">${escA(t.pdx)||'—'} · ${escA(t.requester)||'—'} · ${escA(t.proposed)||'—'}${t.pdxLink?` · <a class="dl" href="${t.pdxLink}" target="_blank" rel="noopener">📄 mở phiếu</a>`:''}</div></div>
     <div class="fld"><label>Ngày cập nhật gần nhất</label><div class="v">${t.updated?fmtVN(t.updated):'—'}</div></div>
@@ -875,7 +928,7 @@ function openDisplay(id){
   const dtypeOpt=DTYPES.map(d=>'<option '+(t.dtype===d?'selected':'')+'>'+d+'</option>').join('');
   const brOpt=BR_LIST.map(b=>'<option '+(t.branch===b?'selected':'')+'>'+b+'</option>').join('');
   const imgBlock=t.img
-    ?'<img class="thumb" src="'+t.img+'"><div style="margin-top:6px;display:flex;gap:8px"><button class="btn sm" onclick="document.getElementById(\'dimg_'+id+'\').click()">Đổi hình</button><button class="btn sm" style="border-color:#f0c2bd;color:var(--red)" onclick="removeImg(\''+id+'\')">Xóa hình</button></div>'
+    ?'<img class="thumb" src="'+t.img+'" onclick="zoomImg('+t.img+')"><div style="margin-top:6px;display:flex;gap:8px"><button class="btn sm" onclick="document.getElementById(\'dimg_'+id+'\').click()">Đổi hình</button><button class="btn sm" style="border-color:#f0c2bd;color:var(--red)" onclick="removeImg(\''+id+'\')">Xóa hình</button></div>'
     :'<button class="btn" onclick="document.getElementById(\'dimg_'+id+'\').click()">📎 Chọn hình</button>';
   document.getElementById('drawBody').innerHTML=
     '<div class="two"><div class="fld"><label>Loại</label><select onchange="upd(\''+id+'\',\'dtype\',this.value);renderDisplays()">'+dtypeOpt+'</select></div>'+
