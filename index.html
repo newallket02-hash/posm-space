@@ -156,6 +156,12 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
   .darea{font-size:11px;font-weight:800;color:#8a857d;margin:12px 0 6px;text-transform:uppercase;letter-spacing:.4px}
   .dbadge2{padding:2px 7px;border-radius:6px;font-size:11px;font-weight:700;background:#eef0f2;color:#5a6472}
   .dcard.none{border-left-color:#d9d2c4}
+
+/* CTKM */
+.row2{display:flex;gap:10px}.row2>div{flex:1}
+.btn.danger{background:#fdecea;color:#c0392b;border-color:#f5c6c0}
+.pillsm.green{background:#e7f6ec;color:#1e7e44}.pillsm.amber{background:#fff6e6;color:#9a6a00}.pillsm.red{background:#fdeceb;color:#c0392b}
+.dnote{font-size:12px;color:#666;margin-top:4px}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -187,6 +193,7 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
   <div class="tabs">
     <button class="tab on" id="tabPosm" onclick="switchView('posm')">📋 Tiến độ POSM</button>
     <button class="tab" id="tabDisp" onclick="switchView('display')">🪧 Standee · Tentcard · TV</button>
+    <button class="tab" id="tabPromo" onclick="switchView('promo')">📣 Báo cáo CTKM</button>
   </div>
 
   <div class="prog" id="posmProg">
@@ -210,6 +217,13 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
   <div class="dsum" id="dSum"></div>
   <div class="dctrl" id="dCtrl"></div>
   <div class="dlist" id="dList"></div>
+</div>
+
+<div id="promoWrap" style="display:none">
+  <div class="searchbar" style="margin:12px 0"><span class="sicon">🔍</span><input id="pSearchInput" placeholder="Tìm CTKM: tên · chi nhánh · nội dung · ghi chú…" oninput="pfilter.q=this.value;renderPromos()"><span class="scount" id="pSearchCount"></span></div>
+  <div class="dsum" id="pSum"></div>
+  <div class="dctrl" id="pCtrl"></div>
+  <div class="dlist" id="pList"></div>
 </div>
 
 <div class="scrim" id="scrim" onclick="closeDraw()"></div>
@@ -309,7 +323,7 @@ function isStuck(t){if(isDone(t))return false;if(t.stuck)return true;if(isOverdu
 /* ---------- render ---------- */
 function render(){
   renderDisplays();
-  const A=arr().filter(t=>t.kind!=='display');
+  const A=arr().filter(t=>t.kind!=='display'&&t.kind!=='promo');
   const done=A.filter(isDone),urg=A.filter(isUrgent),over=A.filter(isOverdue),stk=A.filter(isStuck);
   // progress bar by column
   const track=document.getElementById('progTrack');
@@ -385,7 +399,8 @@ function dOver(e,col){e.preventDefault();e.currentTarget.classList.add('drag');}
 function dLeave(e){e.currentTarget.classList.remove('drag');}
 function dDrop(e,col){e.preventDefault();e.currentTarget.classList.remove('drag');if(dragId){setCol(dragId,col);}dragId=null;}
 
-function setTag(t){filter.tag=(filter.tag===t&&t!=='all')?'all':t;render();}
+function setTag(t){filter.tag=(filter.tag===t&&t!=='all')?'all':t;if(v==='promo')renderPromos();
+  render();}
 function onSearch(v){filter.q=v;render();}
 function clearSearch(){filter.q='';const el=document.getElementById('searchInput');if(el)el.value='';render();}
 
@@ -769,10 +784,11 @@ function dStatus(t){const n=dDays(t);
 function switchView(v){view=v;
   document.getElementById('tabPosm').classList.toggle('on',v==='posm');
   document.getElementById('tabDisp').classList.toggle('on',v==='display');
+  document.getElementById('tabPromo').classList.toggle('on',v==='promo');
   const set=(id,s)=>{const e=document.getElementById(id);if(e)e.style.display=s?'':'none';};
   const posm=(v==='posm');
   ['posmProg','posmSearch','filt','board'].forEach(id=>set(id,posm));
-  set('displayWrap',!posm);set('btnTunhap',posm);set('btnExcel',posm);
+  set('displayWrap',v==='display');set('promoWrap',v==='promo');set('btnTunhap',posm);set('btnExcel',posm);
   render();}
 function dCardHTML(t){
   const e=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
@@ -872,6 +888,98 @@ function openDisplay(id){
   openScrim();}
 function markChanged(id){const t=store.tasks[id];if(!t)return;t.expire='';t.updated=todayStr(0);save();queuePush(id);openDisplay(id);renderDisplays();toast('Đã đánh dấu đã đổi (xoá hạn)');}
 function delDisplay(id){const b=document.getElementById('delBtn');if(!b)return;if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='Bấm lần nữa để xóa hẳn';return;}pushDelete(id);delete store.tasks[id];save();closeDraw();renderDisplays();toast('Đã xóa mục');}
+/* ===== BÁO CÁO CHƯƠNG TRÌNH KHUYẾN MÃI (CTKM) ===== */
+var pfilter={q:'',branch:'',status:''};
+function promoArr(){return Object.values(store.tasks).filter(t=>t.kind==='promo');}
+function nextPromoNum(){let m=0;Object.keys(store.tasks).forEach(k=>{const mm=/^P(\d+)$/.exec(k);if(mm)m=Math.max(m,+mm[1]);});return m+1;}
+function pStatus(t){
+  var s=parseDate(t.start),e=parseDate(t.end),now=new Date();now.setHours(0,0,0,0);
+  if(!s&&!e)return {key:'none',label:'Chưa đặt lịch',pill:''};
+  if(s&&now<s)return {key:'soon',label:'Sắp chạy',pill:'amber'};
+  if(e&&now>e)return {key:'ended',label:'Đã kết thúc',pill:''};
+  var dl=e?daysLeft(t.end):null;
+  if(dl!==null&&dl<=3)return {key:'ending',label:'Sắp hết hạn ('+dl+'n)',pill:'red'};
+  return {key:'running',label:'Đang chạy',pill:'green'};
+}
+function pPass(t){
+  if(pfilter.branch&&t.branch!==pfilter.branch)return false;
+  if(pfilter.status&&pStatus(t).key!==pfilter.status)return false;
+  if(pfilter.q){var h=[t.taskId,t.name,t.branch,t.items,t.note].join(' ').toLowerCase();if(!h.includes(pfilter.q.toLowerCase()))return false;}
+  return true;
+}
+function renderPromos(){
+  var wrap=document.getElementById('promoWrap');if(!wrap)return;
+  var A=promoArr();
+  var running=A.filter(function(t){var k=pStatus(t).key;return k==='running'||k==='ending';}).length;
+  var soon=A.filter(function(t){return pStatus(t).key==='soon';}).length;
+  var ending=A.filter(function(t){return pStatus(t).key==='ending';}).length;
+  var ended=A.filter(function(t){return pStatus(t).key==='ended';}).length;
+  document.getElementById('pSum').innerHTML=
+    '<div class="s" style="background:#eef0f2"><b>'+A.length+'</b><span>Tổng CTKM</span></div>'+
+    '<div class="s" style="background:#e7f6ec"><b>'+running+'</b><span>Đang chạy</span></div>'+
+    '<div class="s" style="background:#fdeceb"><b>'+ending+'</b><span>Sắp hết hạn</span></div>'+
+    '<div class="s" style="background:#fff6e6"><b>'+soon+'</b><span>Sắp chạy</span></div>'+
+    '<div class="s" style="background:#f0f0f2"><b>'+ended+'</b><span>Đã kết thúc</span></div>';
+  var brOpt=['<option value="">Tất cả chi nhánh</option>'].concat(BRANCHES.map(function(b){return '<option'+(pfilter.branch===b?' selected':'')+'>'+b+'</option>';})).join('');
+  var stOpt='<option value="">Mọi trạng thái</option>'+
+    [['running','Đang chạy'],['ending','Sắp hết hạn'],['soon','Sắp chạy'],['ended','Đã kết thúc'],['none','Chưa đặt lịch']]
+    .map(function(o){return '<option value="'+o[0]+'"'+(pfilter.status===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('');
+  document.getElementById('pCtrl').innerHTML=
+    '<select onchange="pfilter.branch=this.value;renderPromos()">'+brOpt+'</select>'+
+    '<select onchange="pfilter.status=this.value;renderPromos()">'+stOpt+'</select>'+
+    '<button class="btn" onclick="addPromo()">＋ Thêm CTKM</button>'+
+    '<button class="btn" onclick="exportPromoExcel()">📊 Excel</button>';
+  var list=A.filter(pPass).sort(function(a,b){return (parseDate(b.start)||0)-(parseDate(a.start)||0);});
+  document.getElementById('pSearchCount').textContent=pfilter.q?(list.length+' kết quả'):'';
+  var esc=function(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');};
+  document.getElementById('pList').innerHTML=list.length?list.map(function(t){
+    var st=pStatus(t);
+    var range=(t.start||'?')+' → '+(t.end||'?');
+    var items=(t.items||'').trim();
+    var pill=st.pill?'<span class="pillsm '+st.pill+'">'+esc(st.label)+'</span>':'<span class="pillsm">'+esc(st.label)+'</span>';
+    return '<div class="dcard '+st.key+'" onclick="openPromo(\''+t.taskId+'\')">'+
+      '<div class="dt"><span>'+esc(t.name||'(chưa đặt tên)')+'</span></div>'+
+      '<div class="dprog">'+esc(t.branch||'')+' · '+esc(range)+'</div>'+
+      '<div class="dmeta">'+pill+(items?'<span>POSM: '+esc(items)+'</span>':'')+'</div>'+
+      (t.note?'<div class="dnote">'+esc(t.note)+'</div>':'')+
+    '</div>';
+  }).join(''):'<div class="empty">Chưa có chương trình khuyến mãi nào. Bấm “＋ Thêm CTKM” để tạo.</div>';
+}
+function addPromo(){
+  var id='P'+String(nextPromoNum()).padStart(2,'0');
+  store.tasks[id]={taskId:id,kind:'promo',name:'',branch:pfilter.branch||'Quận 2',start:'',end:'',items:'',note:'',img:'',updated:todayStr(0)};
+  save();queuePush(id);renderPromos();openPromo(id);
+}
+function openPromo(id){
+  var t=store.tasks[id];if(!t)return;
+  var a=function(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
+  var st=pStatus(t);
+  var brOpt=BRANCHES.map(function(b){return '<option'+(t.branch===b?' selected':'')+'>'+b+'</option>';}).join('');
+  var statusHtml=st.pill?'<span class="pillsm '+st.pill+'">'+a(st.label)+'</span>':'<span class="pillsm">'+a(st.label)+'</span>';
+  document.getElementById('drawTitle').innerHTML='CTKM '+id+' '+statusHtml;
+  document.getElementById('drawBody').innerHTML=
+    '<label>Tên chương trình</label><input value="'+a(t.name)+'" oninput="upd(\''+id+'\',\'name\',this.value)">'+
+    '<label>Chi nhánh</label><select onchange="upd(\''+id+'\',\'branch\',this.value)">'+brOpt+'</select>'+
+    '<div class="row2"><div><label>Ngày bắt đầu (dd/mm/yyyy)</label><input value="'+a(t.start)+'" oninput="upd(\''+id+'\',\'start\',this.value)"></div>'+
+    '<div><label>Ngày kết thúc (dd/mm/yyyy)</label><input value="'+a(t.end)+'" oninput="upd(\''+id+'\',\'end\',this.value)"></div></div>'+
+    '<label>Hạng mục POSM liên quan (mã PĐX, cách nhau dấu phẩy)</label><input value="'+a(t.items)+'" oninput="upd(\''+id+'\',\'items\',this.value)">'+
+    '<label>Ghi chú</label><textarea oninput="upd(\''+id+'\',\'note\',this.value)">'+a(t.note)+'</textarea>'+
+    '<div style="margin-top:14px;text-align:right"><button class="btn danger" onclick="delPromo(\''+id+'\')">🗑 Xoá CTKM</button></div>';
+  openScrim();
+}
+function delPromo(id){
+  if(!confirm('Xoá chương trình khuyến mãi này?'))return;
+  delete store.tasks[id];save();pushDelete(id);closeDraw();renderPromos();toast('Đã xoá CTKM');
+}
+function exportPromoExcel(){
+  var A=promoArr();if(!A.length)return toast('Chưa có CTKM để xuất');
+  var header=['Mã','Tên chương trình','Chi nhánh','Bắt đầu','Kết thúc','Trạng thái','Hạng mục POSM','Ghi chú'];
+  var rows=A.map(function(t){return [t.taskId,t.name||'',t.branch||'',t.start||'',t.end||'',pStatus(t).label,t.items||'',t.note||''];});
+  var ws=XLSX.utils.aoa_to_sheet([header].concat(rows));
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'CTKM');
+  XLSX.writeFile(wb,'BaoCao_CTKM.xlsx');
+}
+
 function exportDisplayExcel(){
   const A=dispArr();if(!A.length)return toast('Chưa có mục để xuất');
   const header=['Loại','Quận','Khu vực','Tầng','Bộ phận','Vị trí','Nội dung hiển thị','Thời lượng','Hạn cần đổi','Trạng thái','Ghi chú'];
