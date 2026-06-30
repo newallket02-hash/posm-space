@@ -162,6 +162,15 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
 .btn.danger{background:#fdecea;color:#c0392b;border-color:#f5c6c0}
 .pillsm.green{background:#e7f6ec;color:#1e7e44}.pillsm.amber{background:#fff6e6;color:#9a6a00}.pillsm.red{background:#fdeceb;color:#c0392b}
 .dnote{font-size:12px;color:#666;margin-top:4px}
+
+/* CTKM table */
+.ptable{border-collapse:collapse;font-size:12px;width:max-content;min-width:100%}
+.ptable th,.ptable td{border:1px solid #e6e1d6;padding:4px 6px;vertical-align:top;text-align:left}
+.ptable th{background:#f5f2ea;font-weight:700;position:sticky;top:0;z-index:1;white-space:nowrap}
+.ptable .pcell{min-height:18px;outline:none;white-space:pre-wrap;word-break:break-word}
+.ptable .pcell:focus{background:#fff7e6;box-shadow:inset 0 0 0 2px var(--gold-soft)}
+.ptable tr:hover td{background:#fcfbf7}
+.btn.sm{padding:2px 8px;font-size:11px}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -220,10 +229,10 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
 </div>
 
 <div id="promoWrap" style="display:none">
-  <div class="searchbar" style="margin:12px 0"><span class="sicon">🔍</span><input id="pSearchInput" placeholder="Tìm CTKM: tên · chi nhánh · nội dung · ghi chú…" oninput="pfilter.q=this.value;renderPromos()"><span class="scount" id="pSearchCount"></span></div>
+  <div class="searchbar" style="margin:12px 0"><span class="sicon">🔍</span><input id="pSearchInput" placeholder="Tìm CTKM: chi nhánh · nhóm · tên ưu đãi · note…" oninput="pfilter.q=this.value;renderPromos()"><span class="scount" id="pSearchCount"></span></div>
   <div class="dsum" id="pSum"></div>
   <div class="dctrl" id="pCtrl"></div>
-  <div class="dlist" id="pList"></div>
+  <div id="pTableWrap" style="overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></div>
 </div>
 
 <div class="scrim" id="scrim" onclick="closeDraw()"></div>
@@ -888,93 +897,155 @@ function openDisplay(id){
   openScrim();}
 function markChanged(id){const t=store.tasks[id];if(!t)return;t.expire='';t.updated=todayStr(0);save();queuePush(id);openDisplay(id);renderDisplays();toast('Đã đánh dấu đã đổi (xoá hạn)');}
 function delDisplay(id){const b=document.getElementById('delBtn');if(!b)return;if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='Bấm lần nữa để xóa hẳn';return;}pushDelete(id);delete store.tasks[id];save();closeDraw();renderDisplays();toast('Đã xóa mục');}
-/* ===== BÁO CÁO CHƯƠNG TRÌNH KHUYẾN MÃI (CTKM) ===== */
-var pfilter={q:'',branch:'',status:''};
-function promoArr(){return Object.values(store.tasks).filter(t=>t.kind==='promo');}
-function nextPromoNum(){let m=0;Object.keys(store.tasks).forEach(k=>{const mm=/^P(\d+)$/.exec(k);if(mm)m=Math.max(m,+mm[1]);});return m+1;}
-function pStatus(t){
-  var s=parseDate(t.start),e=parseDate(t.end),now=new Date();now.setHours(0,0,0,0);
-  if(!s&&!e)return {key:'none',label:'Chưa đặt lịch',pill:''};
-  if(s&&now<s)return {key:'soon',label:'Sắp chạy',pill:'amber'};
-  if(e&&now>e)return {key:'ended',label:'Đã kết thúc',pill:''};
-  var dl=e?daysLeft(t.end):null;
-  if(dl!==null&&dl<=3)return {key:'ending',label:'Sắp hết hạn ('+dl+'n)',pill:'red'};
-  return {key:'running',label:'Đang chạy',pill:'green'};
+/* ===== BÁO CÁO CHƯƠNG TRÌNH KHUYẾN MÃI (CTKM) — dạng bảng ===== */
+var PROMO_SEED={"months":["T11","T12","T01","T02","T03","T04","T05"],"promos":[{"branch":"Healing World Q2","group":"Combo chà da/tẩy tế bào chết","name":"Combo JJB + Peeling dành cho Nam","cond":"Dành cho tất cả KH. Booking trước qua hotline","priceNew":"290k","priceOld":"560k","off":"48%","hours":"12:00~17:00","days":"T2~T6","term":"01/07~31/08/2026","note":"Không áp dụng Lễ, Tết","results":{"T11":"190","T12":"241","T01":"235","T02":"176","T03":"244","T04":"235","T05":"203"}},{"branch":"Healing World Q2","group":"Combo chà da/tẩy tế bào chết","name":"Combo JJB+ Body Scrub dành cho nữ","cond":"","priceNew":"","priceOld":"720k","off":"60%","hours":"","days":"","term":"","note":"","results":{"T11":"73","T12":"109","T01":"95","T02":"75","T03":"105","T04":"108","T05":"99"}},{"branch":"Healing World Q2","group":"Combo chà da/tẩy tế bào chết","name":"Combo JJB+Skin Peeling NAM & NỮ","cond":"","priceNew":"235k","priceOld":"405k(Nam)/450k(Nữ)","off":"45%/50%","hours":"Sau 20h","days":"T2~CN","term":"01/07~31/08/2026","note":"~7-8 pax/ngày","results":{"T11":"230 (152/78)","T12":"226 (150/76)","T01":"215 (124/91)","T02":"139 (91/48)","T03":"220 (137/83)","T04":"226 (144/82)","T05":"208 (124/84)"}},{"branch":"Healing World Q2","group":"Combo chà da/tẩy tế bào chết","name":"Combo JJB+ Body Scrub dành cho Nữ","cond":"","priceNew":"455k","priceOld":"720k","off":"37%","hours":"9:00~22:00","days":"T7~CN","term":"01/07~30/08/2026","note":"","results":{"T11":"28","T12":"25","T01":"21","T02":"10","T03":"57","T04":"40","T05":"19"}},{"branch":"Healing World Q2","group":"Menu Happy Hour","name":"Happy Hour Sáng","cond":"","priceNew":"210K","priceOld":"","off":"22%","hours":"9h00~11h00","days":"T2~T6","term":"Thường niên","note":"Không áp dụng Lễ, Tết","results":{"T11":"JJB 19.560","T12":"JJB 18.595","T01":"JJB 20.097","T02":"JJB 18.708","T03":"JJB 20.777","T04":"JJB 23.996","T05":"JJB 24.061"}},{"branch":"Healing World Q2","group":"Menu Happy Hour","name":"Happy Hour Tối","cond":"","priceNew":"170k","priceOld":"","off":"37%","hours":"20h00~24h00","days":"T2~CN","term":"","note":"Lễ, Tết vẫn áp dụng","results":{"T11":"516","T12":"399","T01":"544","T02":"935","T03":"740","T04":"1148","T05":"1163"}},{"branch":"Healing World Q2","group":"Nghỉ dưỡng","name":"Nghỉ dưỡng cao cấp - khỏe thân tâm (Nữ)","cond":"KH Nữ cao trên 1m2. Follow Tiktok ưu tiên","priceNew":"150k","priceOld":"270K","off":"44%","hours":"9h00~12h00","days":"T2~T6","term":"01/07~31/08/2026","note":"Không áp dụng Lễ, Tết","results":{"T11":"361","T12":"549","T01":"1415","T02":"1554","T03":"910","T04":"1659","T05":"1178"}},{"branch":"Healing World Q2","group":"Nghỉ dưỡng","name":"Nghỉ dưỡng cao cấp (chiều)","cond":"","priceNew":"","priceOld":"","off":"37%","hours":"16h00~21h00","days":"","term":"","note":"","results":{"T11":"713","T12":"767","T01":"1626","T02":"895","T03":"628","T04":"1137","T05":"1078"}},{"branch":"Healing World Q2","group":"Nghỉ dưỡng","name":"Sài Gòn hẹn hò ở đâu? (về đêm)","cond":"Dành cho tất cả KH","priceNew":"110k=>139k","priceOld":"270k","off":"49%","hours":"Sau 21:00","days":"T2~CN","term":"01/07~31/08/2026","note":"","results":{"T11":"1097","T12":"1235","T01":"1500","T02":"1884","T03":"808","T04":"1164","T05":"1297"}},{"branch":"Healing World Q2","group":"Nghỉ dưỡng","name":"Cuối tuần rộn ràng - thư giãn - gắn kết","cond":"Tất cả KH. Google review/Like share ưu tiên","priceNew":"210K","priceOld":"270K","off":"19%","hours":"9:00~10:30","days":"T7~CN","term":"01/07~30/08/2026","note":"","results":{"T11":"942","T12":"878","T01":"906","T02":"391","T03":"455","T04":"1434","T05":"1106"}},{"branch":"Healing World Q2","group":"Nghỉ dưỡng","name":"Cuối tuần (chiều)","cond":"","priceNew":"","priceOld":"","off":"","hours":"16:00~20:00","days":"","term":"","note":"","results":{"T11":"736","T12":"680","T01":"779","T02":"292","T03":"638","T04":"1032","T05":"1038"}},{"branch":"Healing World Q2","group":"Nghỉ dưỡng","name":"U60+ Tăng cường sức khỏe","cond":"KH Việt từ 60 tuổi (1965) trở lên, mang CCCD","priceNew":"125K","priceOld":"270k","off":"54%","hours":"9:00~24:00","days":"T2~T6","term":"04/05-31/12/2026","note":"Tặng 01 trứng nướng + Promo 90k","results":{"T11":"308","T12":"478","T01":"392","T02":"290","T03":"246","T04":"490","T05":"492"}},{"branch":"Healing World Q2","group":"Nghỉ dưỡng","name":"HSSV – 125K thư giãn quá đã","cond":"HSSV, mang CCCD/thẻ SV, Follow Tiktok/Like share","priceNew":"125K","priceOld":"270k","off":"54%","hours":"12h00~24h00","days":"T2~T6","term":"01/04-31/12/2026","note":"Không áp dụng Lễ, Tết. Tặng 01 trứng nướng","results":{"T11":"2829","T12":"2616","T01":"1995","T02":"1854","T03":"2242","T04":"2749","T05":"2195"}},{"branch":"Healing World Q2","group":"Nghỉ dưỡng","name":"[HSSV] Hè săn deal sớm","cond":"HSSV đi từ 02 người, đồng phục/thẻ SV, Follow Tiktok/Like share","priceNew":"90k=>125K","priceOld":"270k","off":"54%","hours":"9h00~11h00","days":"T2~T6","term":"01/07~31/08/2026","note":"Không áp dụng Lễ, Tết","results":{"T11":"1622","T12":"1423","T03":"76","T04":"517","T05":"412"}},{"branch":"Healing World Q2","group":"Event","name":"BIG FAN","cond":"Đăng post Facebook check-in Golden Lotus, gửi link inbox fanpage. Trao 7 KH có Like/Share cao nhất","priceNew":"","priceOld":"","off":"","hours":"9:00~24:00","days":"T2~CN","term":"17/11-31/12/2026","note":"Áp dụng Lễ Tết","results":{"T11":"1 đạt / 0 nhận","T12":"0 / 0","T01":"1 đạt / 0 nhận","T02":"3 đạt / 1 nhận","T03":"4 đạt / 0 nhận","T04":"5 đạt / 2 nhận","T05":"6 đạt / 2 nhận"}},{"branch":"Healing World Q2","group":"Event","name":"Sáng tạo video TikTok","cond":"Kiếm 9 triệu tiền mặt. 10 chủ đề định hướng","priceNew":"","priceOld":"","off":"","hours":"9h~24h00","days":"T2~CN","term":"01/10-31/12/2026","note":"Áp dụng Lễ Tết","results":{"T11":"84 pax","T12":"102 pax (366 voucher)","T01":"50 pax (162 voucher)","T02":"56 pax (183 voucher)","T03":"47 pax (167 voucher)","T04":"53 pax (188 voucher)","T05":"55 pax (168 voucher)"}},{"branch":"Healing World Q2","group":"Event","name":"Healing World x TikToker","cond":"KOC, sinh viên, travellers quay tiktok review","priceNew":"","priceOld":"","off":"","hours":"9h~24h00","days":"T2~CN","term":"01/07-31/08/2026","note":"Tối đa 3-4 vé/KOC","results":{}},{"branch":"Healing World Q2","group":"Event","name":"Carnival Game (Mua 1 tặng 1)","cond":"Mua 10.000đ/1 lượt tặng 1 lượt miễn phí","priceNew":"","priceOld":"","off":"","hours":"OFFLINE 9h~24h","days":"T2~CN","term":"~31/12/2026","note":"Áp dụng Lễ Tết","results":{"T11":"Buy 3956 / Trúng 209 (5%)","T12":"Buy 4533 / Trúng 294 (6%)","T01":"Buy 2353 / Trúng 299 (6%)","T02":"Buy 4575 / Trúng 489 (5%)","T03":"Buy 3339 / Trúng 338 (5%)","T04":"Buy 4638 / Trúng 423 (4.5%)","T05":"Buy 4974"}},{"branch":"Healing World Q2","group":"Golden Massage","name":"Foot/Body massage 60p giảm 20%","cond":"Booking trước 1h","priceNew":"","priceOld":"","off":"20%","hours":"10h~23h","days":"T2~T6","term":"01/07-31/08/2026","note":"Không áp dụng Lễ, Tết","results":{"T11":"Foot 127; Body 787","T12":"Foot 131; Body 570","T01":"Foot 63; Body 236","T02":"Foot 113; Body 436","T03":"Foot 170; Body 675","T04":"Foot 144; Body 640","T05":"Foot 140; Body 590"}},{"branch":"Healing World Q2","group":"Golden Massage","name":"Combo JJB free + massage Facial 60p","cond":"Không Like & Share. Booking trước 1h","priceNew":"420k","priceOld":"690k","off":"39%","hours":"9h00~23h00","days":"T2~T6","term":"01/07-31/08/2026","note":"","results":{"T11":"43","T12":"20","T03":"16","T04":"23","T05":"22"}},{"branch":"Healing World Q2","group":"Golden Elegance Hair","name":"Color/style/treatment giảm 30%","cond":"Không cần đặt trước","priceNew":"","priceOld":"","off":"30%","hours":"10h00~23h00","days":"T2~CN","term":"~31/08/2026","note":"Áp dụng Lễ, Tết","results":{"T11":"156","T12":"155","T01":"153","T02":"219","T03":"193","T04":"207","T05":"205"}},{"branch":"Healing World Q2","group":"Golden Elegance Hair","name":"Keratin/Collagen Treatment","cond":"Đặt trước 1 ngày","priceNew":"","priceOld":"1tr~1.8tr","off":"50%","hours":"10h00~23h00","days":"T2~T6","term":"","note":"","results":{"T11":"20","T12":"24","T01":"21","T02":"50","T03":"31","T04":"27","T05":"29"}},{"branch":"Healing World Q2","group":"Golden Elegance Hair","name":"Cắt tóc Nam + gội 10p","cond":"Không cần đặt trước","priceNew":"70k","priceOld":"300k","off":"77%","hours":"10~12h & 19~23h","days":"T2~CN","term":"","note":"","results":{"T11":"76","T12":"78","T01":"44","T02":"62","T03":"98","T04":"101","T05":"102"}},{"branch":"Healing World Q2","group":"Golden Elegance Hair","name":"Cắt tóc Nữ + gội 10p","cond":"Không cần đặt trước","priceNew":"150k","priceOld":"350k","off":"57%","hours":"","days":"","term":"","note":"","results":{"T11":"31","T12":"35","T01":"28","T02":"38","T03":"38","T04":"46","T05":"34"}},{"branch":"Healing World Q2","group":"Golden Nail","name":"Sơn Gel giảm 30%","cond":"Không cần đặt trước","priceNew":"","priceOld":"","off":"30%","hours":"10h00~23h00","days":"T2~CN","term":"~31/08/2026","note":"Áp dụng Lễ, Tết","results":{"T11":"185","T12":"211","T01":"195","T02":"270","T03":"213","T04":"235","T05":"230"}},{"branch":"Healing World Q2","group":"Golden Nail","name":"Nail Art Design OFF 50%","cond":"Cho tất cả KH","priceNew":"","priceOld":"","off":"50%","hours":"10h00~23h00","days":"T2~T6","term":"","note":"","results":{"T11":"33","T12":"50","T01":"26","T02":"60","T03":"23","T04":"41","T05":"37"}},{"branch":"Healing World Q2","group":"Golden Nail","name":"Sơn Gel HSSV OFF 50%","cond":"HSSV, thẻ/đồng phục, review google","priceNew":"","priceOld":"","off":"50%","hours":"10h00~23h00","days":"T2~T6","term":"","note":"","results":{"T11":"8","T12":"13","T01":"3","T02":"14","T03":"6","T04":"11","T05":"17"}},{"branch":"Healing World Q2","group":"Golden Nail","name":"Review Google Maps tặng voucher JJB","cond":"Review map có hình, 5 review/ngày","priceNew":"","priceOld":"","off":"","hours":"","days":"T2~T6","term":"~31/12/2026","note":"Áp dụng Lễ, Tết. Voucher HSD 1 tháng","results":{"T05":"139"}},{"branch":"Healing World Q2","group":"Nail + Hair","name":"Beauty Passport","cond":"Tích lũy 10%, dùng từ bill 200k, HSD thẻ 6 tháng","priceNew":"","priceOld":"","off":"10%","hours":"10:00~23:00","days":"T2~CN","term":"~31/12/2026","note":"Áp dụng Lễ, Tết","results":{"T11":"23 thẻ (4 Nail/19 Hair)","T12":"19 thẻ (18/1)","T01":"66 thẻ (22/44)","T02":"32 thẻ (6/26)","T03":"17 thẻ (9/8)","T04":"16 thẻ (9/7)","T05":"19 thẻ"}},{"branch":"Healing World Q2","group":"Golden Kitchen","name":"Game Vòng Quay May Mắn","cond":"Bill từ 200k = 1 lượt quay. Review GG thêm lượt","priceNew":"","priceOld":"","off":"","hours":"10h00~22h00","days":"T2~T6","term":"~31/12/2026","note":"Không áp dụng Lễ, Tết","results":{"T11":"383 KH / 124 trúng (31%) - 14.35tr","T12":"351 / 108 (30%) - 16.2tr","T01":"206 / 45 (21%) - 5.5tr","T02":"283 / 71 (25%) - 10.1tr","T05":"Chưa có (thay đổi nhân sự)"}},{"branch":"Healing World Q2","group":"Golden Kitchen","name":"Combo siêu no HSSV (1 người)","cond":"HSSV, thẻ/bill nghỉ dưỡng. Last order 21h","priceNew":"115k","priceOld":"190k","off":"39%","hours":"12h00~22h00","days":"T2~T6","term":"01/04-31/12/2026","note":"Không áp dụng Lễ, Tết","results":{"T11":"23 (C1:14/C2:9)","T12":"19 (8/11)"}},{"branch":"Healing World Q2","group":"Golden Kitchen","name":"Combo siêu no HSSV (2 người)","cond":"","priceNew":"190k","priceOld":"290k","off":"34%","hours":"","days":"","term":"","note":"","results":{"T11":"58 (10/48)","T12":"47 (10/37)"}},{"branch":"Healing World Q2","group":"Aqua Garden Cafe","name":"Cà phê Cá - Không gian Mới","cond":"KH có bill/key. Gồm 1 trà thảo mộc/kem tuyết","priceNew":"30k","priceOld":"50k","off":"40%","hours":"10h30~21h30","days":"T2~CN","term":"21/04~31/07/2026","note":"Trẻ em <0.8m miễn phí","results":{"T11":"651 khách","T12":"263 khách (21/4-30/4)"}},{"branch":"Healing World Q2","group":"Aqua Garden Cafe","name":"Cà phê Cá (khách ngoài)","cond":"","priceNew":"95k","priceOld":"","off":"","hours":"","days":"","term":"","note":"","results":{"T11":"15"}},{"branch":"Quận 1","group":"Massage","name":"Massage facial 60p","cond":"Booking trước 1h","priceNew":"230k","priceOld":"420k","off":"45%","hours":"9h30~19h00","days":"T2~T6","term":"01/07-31/08/2026","note":"Không áp dụng Lễ, Tết","results":{"T11":"36 (14/22)","T12":"36 (15/21)","T01":"39 (23/16)","T02":"29 (11/18)","T03":"48 (22/26)","T04":"51 (25/26)","T05":"51 (26/25)"}},{"branch":"Quận 1","group":"Massage","name":"Massage Body 60p (no oil)","cond":"KH Việt. Booking trước 1h","priceNew":"298k","priceOld":"395k","off":"30%","hours":"9h30~16h00","days":"T2~T6","term":"","note":"","results":{"T11":"25","T12":"40","T01":"21","T02":"19","T03":"26","T04":"26","T05":"19"}},{"branch":"Quận 1","group":"Massage","name":"Massage Foot 60p","cond":"","priceNew":"242k","priceOld":"315k","off":"30%","hours":"","days":"","term":"","note":"","results":{"T11":"39","T12":"44","T01":"42","T02":"27","T03":"42","T04":"50","T05":"35"}},{"branch":"Quận 1","group":"Menu Offline","name":"Chà da nam","cond":"KH cao trên 1.2m","priceNew":"232k","priceOld":"290k","off":"20%","hours":"9h~12h, 19h~21h","days":"T2~T6/CN","term":"Thường niên","note":"","results":{"T11":"193","T01":"198","T03":"195","T04":"206","T05":"143"}},{"branch":"Quận 1","group":"Menu Offline","name":"Sauna nam","cond":"","priceNew":"176k","priceOld":"220k","off":"20%","hours":"9h~12h","days":"T2~T6","term":"","note":"","results":{"T11":"41","T01":"57","T03":"47","T04":"55","T05":"47"}},{"branch":"Quận 1","group":"Nail","name":"Sơn gel tay/chân","cond":"Cho tất cả KH","priceNew":"","priceOld":"","off":"20%","hours":"10h~16h","days":"T2~T6","term":"01/07-31/08/2026","note":"","results":{"T11":"95","T12":"96","T01":"93","T02":"79","T03":"106","T04":"98","T05":"76"}},{"branch":"Quận 1","group":"Nail","name":"Design (tay/chân)","cond":"","priceNew":"","priceOld":"","off":"","hours":"","days":"","term":"","note":"","results":{"T11":"45","T12":"55","T01":"46","T02":"46","T03":"59","T04":"72","T05":"38"}},{"branch":"Quận 1","group":"Nail","name":"Review Google Maps tặng dịch vụ","cond":"","priceNew":"","priceOld":"","off":"","hours":"","days":"T2~CN","term":"~31/12/2026","note":"Áp dụng Lễ, Tết","results":{"T05":"139"}},{"branch":"Healing Land Q7","group":"District 7 JJB","name":"HSSV – Nạp đầy năng lượng","cond":"HSSV đồng phục/thẻ SV, Like share/review","priceNew":"90k","priceOld":"250k","off":"64%","hours":"12h00~24h00","days":"T2~T6","term":"01/07-31/08/2026","note":"Không áp dụng Lễ, Tết. Tặng trứng nướng","results":{"T11":"317","T12":"203","T01":"143","T02":"98","T03":"198","T04":"232","T05":"228"}},{"branch":"Healing Land Q7","group":"District 7 JJB","name":"Sài Gòn về đêm đi đâu?","cond":"Dành cho tất cả KH","priceNew":"130k","priceOld":"270k","off":"48%","hours":"21:00~24:00","days":"T2~CN","term":"01/07-31/08/2026","note":"Áp dụng Lễ, Tết","results":{"T11":"494","T12":"549","T01":"550","T02":"449","T03":"514","T04":"526","T05":"493"}},{"branch":"Healing Land Q7","group":"Menu Happy Hour","name":"Sáng - AM","cond":"","priceNew":"190K","priceOld":"250K","off":"","hours":"8:00~11:00","days":"T2~T6","term":"Thường niên","note":"Không áp dụng Lễ, Tết","results":{"T11":"713","T12":"905","T01":"722","T02":"485","T03":"823","T04":"728","T05":"610"}},{"branch":"Healing Land Q7","group":"Menu Happy Hour","name":"Tối - PM","cond":"","priceNew":"150K","priceOld":"","off":"","hours":"19:00~24:00","days":"T2~CN","term":"","note":"Áp dụng Lễ, Tết","results":{"T11":"2127","T12":"2109","T01":"2311","T02":"1926","T03":"2403","T04":"2209","T05":"2289"}},{"branch":"Healing Land Q7","group":"Event","name":"Healing Land x TikTok Creator","cond":"KOC, sinh viên quay tiktok. Đợt 1: 600k, Đợt 2: 400k (>=1000 views)","priceNew":"","priceOld":"","off":"","hours":"8h~24h00","days":"T2~CN","term":"01/07-31/08/2026","note":"Áp dụng Lễ, Tết","results":{}},{"branch":"Healing Land Q7","group":"SPA Game","name":"Vòng Xoay May Mắn","cond":"KH > 1.2m, 1 người/1 lần","priceNew":"","priceOld":"","off":"","hours":"8h00~23h00","days":"T2~T6","term":"~30.12.2026","note":"Áp dụng Lễ, Tết","results":{"T11":"Quay 254 / Trúng 87 (34%)","T12":"332 / 139 (42%)","T01":"175 / 54 (31%)","T02":"364 / 98 (27%)","T03":"226 / 70 (31%)","T04":"227 / 47 (21%)","T05":"257 / 67 (26%)"}},{"branch":"Healing Land Q7","group":"Massage","name":"Massage Facial 60p","cond":"Không Like & Share. Booking trước 1h","priceNew":"230k","priceOld":"420k","off":"45%","hours":"10h00~22h00","days":"T2~T6","term":"01/07-31/08/2026","note":"Không áp dụng Lễ, Tết","results":{"T11":"43 (8/35)","T12":"54 (14/42)","T01":"67 (17/50)","T02":"39 (10/29)","T03":"58 (11/47)","T04":"50 (11/39)","T05":"47 (11/34)"}},{"branch":"Healing Land Q7","group":"Mr. BBQ Game","name":"Vòng Xoay May Mắn","cond":"Bill từ 200k = 1 lượt. Review GG thêm 1 lượt","priceNew":"","priceOld":"","off":"","hours":"09h~21h","days":"T2~CN","term":"04.12.2025~31/12/2026","note":"Áp dụng Lễ, Tết","results":{"T11":"Quay 127 / Trúng 6 (4.7%)","T12":"151 / 35 (23.6%)","T01":"125 / 22 (17.6%)","T02":"227 / 31 (14%)","T03":"234 / 33 (14%)","T04":"98 / 41 (42%)","T05":"112 / 16 (14%)"}},{"branch":"Đà Nẵng","group":"Menu Offline","name":"Massage thư giãn 60p","cond":"Dành cho tất cả KH","priceNew":"","priceOld":"","off":"20%","hours":"10h~13h00","days":"T2~T6","term":"Thường niên","note":"Không áp dụng Lễ, Tết","results":{"T11":"756 (HB267/HV206/TP283)","T12":"723 (211/187/325)","T03":"636 (116/219/301)","T04":"746 (246/155/345)","T05":"1181 (405/257/519)"}},{"branch":"Thủ Đức","group":"Golden Meat House","name":"Chọn ưu đãi 1+1","cond":"Dành cho tất cả KH","priceNew":"","priceOld":"","off":"","hours":"11h~17h00","days":"T2~CN","term":"01/07-31/08/2026","note":"Không áp dụng Lễ, Tết","results":{}},{"branch":"Thủ Đức","group":"Golden Meat House","name":"22. Sườn non rút xương cao cấp","cond":"","priceNew":"350k","priceOld":"","off":"","hours":"","days":"","term":"","note":"","results":{"T11":"166","T12":"223","T01":"214","T02":"142","T03":"145","T04":"143","T05":"150"}},{"branch":"Thủ Đức","group":"Golden Meat House","name":"97. Bò Wagyu","cond":"","priceNew":"390k","priceOld":"","off":"","hours":"","days":"","term":"","note":"","results":{"T11":"122","T12":"122","T01":"143","T02":"97","T03":"103","T04":"105","T05":"84"}},{"branch":"Thủ Đức","group":"Golden Meat House","name":"98. Bò Rib eye wagyu","cond":"","priceNew":"1200k","priceOld":"","off":"","hours":"","days":"","term":"","note":"","results":{"T11":"51","T12":"47","T01":"30","T02":"16","T03":"50","T04":"31","T05":"29"}},{"branch":"Thủ Đức","group":"Golden Meat House","name":"99. Bò phi lê Wagyu 200gr","cond":"","priceNew":"1300k","priceOld":"","off":"","hours":"","days":"","term":"","note":"","results":{"T11":"33","T12":"26","T01":"24","T02":"13","T03":"24","T04":"17","T05":"22"}},{"branch":"Thủ Đức","group":"Golden Meat House","name":"Happy Hour Drink Buy 1 Get 1","cond":"Mua 1 tặng 1 - 4 Beer, 10 Soju","priceNew":"","priceOld":"","off":"","hours":"Sau 21h00","days":"T2~CN","term":"~30.12.2026","note":"Áp dụng Lễ, Tết","results":{"T11":"363 (Tiger125/Hei21/Larue23/Soju164)","T12":"441 (172/42/24/203)","T01":"500 (205/19/43/233)","T02":"554 (174/66/53/261)","T03":"470 (192/34/49/195)","T04":"327 (129/44/44/110)","T05":"346 (147/39/34/126)"}},{"branch":"Thủ Đức","group":"Golden Meat House","name":"Review google tặng dừa tươi","cond":"Review >=10 chữ. Tối đa 15 review/ngày","priceNew":"","priceOld":"","off":"","hours":"","days":"T2~CN","term":"~30.12.2026","note":"Áp dụng Lễ, Tết","results":{"T11":"162","T12":"409","T01":"383","T02":"228","T03":"250","T04":"305","T05":"306"}},{"branch":"Thủ Đức","group":"Golden Meat House","name":"Golden Tomahawk Steak giảm 10%","cond":"KH Việt, đặt \"Bò Dát Vàng\" trước 1 ngày","priceNew":"2295k","priceOld":"2550k","off":"10%","hours":"11h~17h00","days":"T2~T6","term":"01/07-31/08/2026","note":"Không áp dụng Lễ, Tết","results":{"T11":"45 (23/22)","T12":"38 (27/11)","T03":"49 (33/16)","T04":"42 (29/13)","T05":"46 (30/16)"}}]};
+var pfilter={q:'',branch:'',group:''};
+var PROMO_COLS=[
+  {k:'group',label:'Nhóm DV',w:130},
+  {k:'name',label:'Tên ưu đãi',w:200},
+  {k:'cond',label:'Điều kiện',w:200},
+  {k:'priceNew',label:'Giá mới',w:90},
+  {k:'priceOld',label:'Giá gốc',w:90},
+  {k:'off',label:'% OFF',w:70},
+  {k:'hours',label:'Giờ',w:110},
+  {k:'days',label:'Ngày',w:90},
+  {k:'term',label:'Thời hạn',w:130},
+  {k:'note',label:'Note',w:160}
+];
+function promoArr(){return Object.values(store.tasks).filter(function(t){return t.kind==='promo';});}
+function promoMonths(){ if(!store.promoMonths||!store.promoMonths.length){store.promoMonths=['T11','T12','T01','T02','T03','T04','T05'];} return store.promoMonths; }
+function nextPromoNum(){var m=0;Object.keys(store.tasks).forEach(function(k){var mm=/^P(\d+)$/.exec(k);if(mm)m=Math.max(m,+mm[1]);});return m+1;}
+function ensurePromoSeed(){
+  if(promoArr().length>0) return;
+  var n=nextPromoNum();
+  PROMO_SEED.promos.forEach(function(p){
+    var id='P'+String(n++).padStart(3,'0');
+    store.tasks[id]={taskId:id,kind:'promo',branch:p.branch,group:p.group,name:p.name,cond:p.cond||'',priceNew:p.priceNew||'',priceOld:p.priceOld||'',off:p.off||'',hours:p.hours||'',days:p.days||'',term:p.term||'',note:p.note||'',img:'',results:p.results||{},updated:todayStr(0)};
+  });
+  if(PROMO_SEED.months&&PROMO_SEED.months.length)store.promoMonths=PROMO_SEED.months.slice();
+  save();
+  promoArr().forEach(function(t){queuePush(t.taskId);});
 }
 function pPass(t){
   if(pfilter.branch&&t.branch!==pfilter.branch)return false;
-  if(pfilter.status&&pStatus(t).key!==pfilter.status)return false;
-  if(pfilter.q){var h=[t.taskId,t.name,t.branch,t.items,t.note].join(' ').toLowerCase();if(!h.includes(pfilter.q.toLowerCase()))return false;}
+  if(pfilter.group&&t.group!==pfilter.group)return false;
+  if(pfilter.q){var h=[t.taskId,t.branch,t.group,t.name,t.cond,t.note].join(' ').toLowerCase();if(!h.includes(pfilter.q.toLowerCase()))return false;}
   return true;
 }
 function renderPromos(){
   var wrap=document.getElementById('promoWrap');if(!wrap)return;
+  ensurePromoSeed();
   var A=promoArr();
-  var running=A.filter(function(t){var k=pStatus(t).key;return k==='running'||k==='ending';}).length;
-  var soon=A.filter(function(t){return pStatus(t).key==='soon';}).length;
-  var ending=A.filter(function(t){return pStatus(t).key==='ending';}).length;
-  var ended=A.filter(function(t){return pStatus(t).key==='ended';}).length;
+  var months=promoMonths();
+  var branches=[''].concat(Array.from(new Set(A.map(function(t){return t.branch;}))));
+  var groups=[''].concat(Array.from(new Set(A.filter(function(t){return !pfilter.branch||t.branch===pfilter.branch;}).map(function(t){return t.group;}))));
   document.getElementById('pSum').innerHTML=
-    '<div class="s" style="background:#eef0f2"><b>'+A.length+'</b><span>Tổng CTKM</span></div>'+
-    '<div class="s" style="background:#e7f6ec"><b>'+running+'</b><span>Đang chạy</span></div>'+
-    '<div class="s" style="background:#fdeceb"><b>'+ending+'</b><span>Sắp hết hạn</span></div>'+
-    '<div class="s" style="background:#fff6e6"><b>'+soon+'</b><span>Sắp chạy</span></div>'+
-    '<div class="s" style="background:#f0f0f2"><b>'+ended+'</b><span>Đã kết thúc</span></div>';
-  var brOpt=['<option value="">Tất cả chi nhánh</option>'].concat(BRANCHES.map(function(b){return '<option'+(pfilter.branch===b?' selected':'')+'>'+b+'</option>';})).join('');
-  var stOpt='<option value="">Mọi trạng thái</option>'+
-    [['running','Đang chạy'],['ending','Sắp hết hạn'],['soon','Sắp chạy'],['ended','Đã kết thúc'],['none','Chưa đặt lịch']]
-    .map(function(o){return '<option value="'+o[0]+'"'+(pfilter.status===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('');
+    '<div class="s" style="background:#eef0f2"><b>'+A.length+'</b><span>Dòng ưu đãi</span></div>'+
+    '<div class="s" style="background:#e7f6ec"><b>'+(branches.length-1)+'</b><span>Chi nhánh</span></div>'+
+    '<div class="s" style="background:#fff6e6"><b>'+months.length+'</b><span>Tháng theo dõi</span></div>';
+  var brOpt=branches.map(function(b){return '<option value="'+esc2(b)+'"'+(pfilter.branch===b?' selected':'')+'>'+(b||'Tất cả chi nhánh')+'</option>';}).join('');
+  var grOpt=groups.map(function(g){return '<option value="'+esc2(g)+'"'+(pfilter.group===g?' selected':'')+'>'+(g||'Tất cả nhóm DV')+'</option>';}).join('');
   document.getElementById('pCtrl').innerHTML=
-    '<select onchange="pfilter.branch=this.value;renderPromos()">'+brOpt+'</select>'+
-    '<select onchange="pfilter.status=this.value;renderPromos()">'+stOpt+'</select>'+
-    '<button class="btn" onclick="addPromo()">＋ Thêm CTKM</button>'+
+    '<select onchange="pfilter.branch=this.value;pfilter.group=\'\';renderPromos()">'+brOpt+'</select>'+
+    '<select onchange="pfilter.group=this.value;renderPromos()">'+grOpt+'</select>'+
+    '<button class="btn" onclick="addPromo()">＋ Thêm dòng</button>'+
+    '<button class="btn" onclick="addPromoMonth()">＋ Thêm tháng</button>'+
     '<button class="btn" onclick="exportPromoExcel()">📊 Excel</button>';
-  var list=A.filter(pPass).sort(function(a,b){return (parseDate(b.start)||0)-(parseDate(a.start)||0);});
+  var list=A.filter(pPass);
   document.getElementById('pSearchCount').textContent=pfilter.q?(list.length+' kết quả'):'';
-  var esc=function(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');};
-  document.getElementById('pList').innerHTML=list.length?list.map(function(t){
-    var st=pStatus(t);
-    var range=(t.start||'?')+' → '+(t.end||'?');
-    var items=(t.items||'').trim();
-    var pill=st.pill?'<span class="pillsm '+st.pill+'">'+esc(st.label)+'</span>':'<span class="pillsm">'+esc(st.label)+'</span>';
-    return '<div class="dcard '+st.key+'" onclick="openPromo(\''+t.taskId+'\')">'+
-      '<div class="dt"><span>'+esc(t.name||'(chưa đặt tên)')+'</span></div>'+
-      '<div class="dprog">'+esc(t.branch||'')+' · '+esc(range)+'</div>'+
-      '<div class="dmeta">'+pill+(items?'<span>POSM: '+esc(items)+'</span>':'')+'</div>'+
-      (t.note?'<div class="dnote">'+esc(t.note)+'</div>':'')+
-    '</div>';
-  }).join(''):'<div class="empty">Chưa có chương trình khuyến mãi nào. Bấm “＋ Thêm CTKM” để tạo.</div>';
+  var th='<tr>'+
+    '<th style="position:sticky;left:0;background:#f5f2ea;z-index:3;min-width:120px">Chi nhánh</th>'+
+    PROMO_COLS.map(function(c){return '<th style="min-width:'+c.w+'px">'+c.label+'</th>';}).join('')+
+    months.map(function(m){return '<th style="min-width:120px;background:#eef5ff">'+esc2(m)+' <span onclick="delPromoMonth(\''+esc2(m)+'\')" title="Xoá tháng" style="cursor:pointer;color:#c0392b">✕</span></th>';}).join('')+
+    '<th style="min-width:90px">Ảnh</th>'+
+    '<th style="min-width:60px"></th>'+
+    '</tr>';
+  var rows=list.map(function(t){
+    var cells='<td style="position:sticky;left:0;background:#fff;z-index:2;font-weight:600">'+esc2(t.branch)+'</td>';
+    cells+=PROMO_COLS.map(function(c){
+      var v=t[c.k]||'';
+      return '<td><div class="pcell" contenteditable="true" data-id="'+t.taskId+'" data-k="'+c.k+'" onblur="updPromoCell(this)">'+esc2(v)+'</div></td>';
+    }).join('');
+    cells+=months.map(function(m){
+      var v=(t.results&&t.results[m])||'';
+      return '<td style="background:#fafcff"><div class="pcell" contenteditable="true" data-id="'+t.taskId+'" data-m="'+esc2(m)+'" onblur="updPromoResult(this)">'+esc2(v)+'</div></td>';
+    }).join('');
+    cells+='<td style="text-align:center">'+(t.img?'<img src="'+t.img+'" style="max-width:70px;max-height:50px;border-radius:4px;cursor:pointer" onclick="viewPromoImg(\''+t.taskId+'\')">':'<button class="btn sm" onclick="document.getElementById(\'pimg_'+t.taskId+'\').click()">＋ Ảnh</button>')+'<input type="file" id="pimg_'+t.taskId+'" accept="image/*" style="display:none" onchange="attachPromoImg(\''+t.taskId+'\',this)"></td>';
+    cells+='<td style="text-align:center"><button class="btn sm danger" onclick="delPromo(\''+t.taskId+'\')">🗑</button></td>';
+    return '<tr>'+cells+'</tr>';
+  }).join('');
+  document.getElementById('pTableWrap').innerHTML=list.length
+    ?'<table class="ptable">'+th+rows+'</table>'
+    :'<div class="empty" style="padding:24px">Không có dòng nào khớp bộ lọc.</div>';
+}
+function esc2(s){return (''+(s==null?'':s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function updPromoCell(el){
+  var id=el.getAttribute('data-id'),k=el.getAttribute('data-k');
+  var t=store.tasks[id];if(!t)return;
+  var v=el.innerText.trim();
+  if(t[k]===v)return;
+  t[k]=v;t.updated=todayStr(0);save();queuePush(id);
+}
+function updPromoResult(el){
+  var id=el.getAttribute('data-id'),m=el.getAttribute('data-m');
+  var t=store.tasks[id];if(!t)return;
+  if(!t.results)t.results={};
+  var v=el.innerText.trim();
+  if((t.results[m]||'')===v)return;
+  t.results[m]=v;t.updated=todayStr(0);save();queuePush(id);
 }
 function addPromo(){
-  var id='P'+String(nextPromoNum()).padStart(2,'0');
-  store.tasks[id]={taskId:id,kind:'promo',name:'',branch:pfilter.branch||'Quận 2',start:'',end:'',items:'',note:'',img:'',updated:todayStr(0)};
-  save();queuePush(id);renderPromos();openPromo(id);
+  var id='P'+String(nextPromoNum()).padStart(3,'0');
+  store.tasks[id]={taskId:id,kind:'promo',branch:pfilter.branch||'Healing World Q2',group:pfilter.group||'',name:'',cond:'',priceNew:'',priceOld:'',off:'',hours:'',days:'',term:'',note:'',img:'',results:{},updated:todayStr(0)};
+  save();queuePush(id);renderPromos();toast('Đã thêm dòng — bấm vào ô để nhập');
 }
-function openPromo(id){
-  var t=store.tasks[id];if(!t)return;
-  var a=function(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
-  var st=pStatus(t);
-  var brOpt=BRANCHES.map(function(b){return '<option'+(t.branch===b?' selected':'')+'>'+b+'</option>';}).join('');
-  var statusHtml=st.pill?'<span class="pillsm '+st.pill+'">'+a(st.label)+'</span>':'<span class="pillsm">'+a(st.label)+'</span>';
-  document.getElementById('drawTitle').innerHTML='CTKM '+id+' '+statusHtml;
-  document.getElementById('drawBody').innerHTML=
-    '<label>Tên chương trình</label><input value="'+a(t.name)+'" oninput="upd(\''+id+'\',\'name\',this.value)">'+
-    '<label>Chi nhánh</label><select onchange="upd(\''+id+'\',\'branch\',this.value)">'+brOpt+'</select>'+
-    '<div class="row2"><div><label>Ngày bắt đầu (dd/mm/yyyy)</label><input value="'+a(t.start)+'" oninput="upd(\''+id+'\',\'start\',this.value)"></div>'+
-    '<div><label>Ngày kết thúc (dd/mm/yyyy)</label><input value="'+a(t.end)+'" oninput="upd(\''+id+'\',\'end\',this.value)"></div></div>'+
-    '<label>Hạng mục POSM liên quan (mã PĐX, cách nhau dấu phẩy)</label><input value="'+a(t.items)+'" oninput="upd(\''+id+'\',\'items\',this.value)">'+
-    '<label>Ghi chú</label><textarea oninput="upd(\''+id+'\',\'note\',this.value)">'+a(t.note)+'</textarea>'+
-    '<div style="margin-top:14px;text-align:right"><button class="btn danger" onclick="delPromo(\''+id+'\')">🗑 Xoá CTKM</button></div>';
-  openScrim();
+function addPromoMonth(){
+  var m=prompt('Tên cột tháng mới (vd: T06, T07, T08):');
+  if(!m)return;m=m.trim();if(!m)return;
+  var months=promoMonths();
+  if(months.indexOf(m)>=0){toast('Tháng đã tồn tại');return;}
+  months.push(m);store.promoMonths=months;save();renderPromos();toast('Đã thêm cột '+m);
+}
+function delPromoMonth(m){
+  if(!confirm('Xoá cột tháng "'+m+'"? (Dữ liệu kết quả của tháng này sẽ bị ẩn)'))return;
+  var months=promoMonths().filter(function(x){return x!==m;});
+  store.promoMonths=months;save();renderPromos();toast('Đã xoá cột '+m);
 }
 function delPromo(id){
-  if(!confirm('Xoá chương trình khuyến mãi này?'))return;
-  delete store.tasks[id];save();pushDelete(id);closeDraw();renderPromos();toast('Đã xoá CTKM');
+  if(!confirm('Xoá dòng ưu đãi này?'))return;
+  delete store.tasks[id];save();pushDelete(id);renderPromos();toast('Đã xoá');
+}
+function attachPromoImg(id,inp){
+  var file=inp.files&&inp.files[0];if(!file)return;
+  var rd=new FileReader();
+  rd.onload=function(e){var im=new Image();
+    im.onload=function(){var max=640,w=im.width,h2=im.height;
+      if(w>h2&&w>max){h2=Math.round(h2*max/w);w=max;}else if(h2>=w&&h2>max){w=Math.round(w*max/h2);h2=max;}
+      var cv=document.createElement('canvas');cv.width=w;cv.height=h2;cv.getContext('2d').drawImage(im,0,0,w,h2);
+      var data;try{data=cv.toDataURL('image/jpeg',0.6);}catch(err){data=e.target.result;}
+      store.tasks[id].img=data;store.tasks[id].updated=todayStr(0);save();queuePush(id);renderPromos();toast('Đã đính kèm ảnh');};
+    im.onerror=function(){toast('Ảnh lỗi');};im.src=e.target.result;};
+  rd.readAsDataURL(file);
+}
+function viewPromoImg(id){
+  var t=store.tasks[id];if(!t||!t.img)return;
+  document.getElementById('drawTitle').innerHTML='Ảnh — '+esc2(t.name||id);
+  document.getElementById('drawBody').innerHTML='<img src="'+t.img+'" style="max-width:100%;border-radius:8px">'+
+    '<div style="margin-top:14px;text-align:right"><button class="btn" onclick="document.getElementById(\'pimg_'+id+'\').click()">Đổi ảnh</button> <button class="btn danger" onclick="removePromoImg(\''+id+'\')">Xoá ảnh</button></div>';
+  openScrim();
+}
+function removePromoImg(id){
+  if(!store.tasks[id])return;delete store.tasks[id].img;store.tasks[id].updated=todayStr(0);save();queuePush(id);closeDraw();renderPromos();toast('Đã xoá ảnh');
 }
 function exportPromoExcel(){
-  var A=promoArr();if(!A.length)return toast('Chưa có CTKM để xuất');
-  var header=['Mã','Tên chương trình','Chi nhánh','Bắt đầu','Kết thúc','Trạng thái','Hạng mục POSM','Ghi chú'];
-  var rows=A.map(function(t){return [t.taskId,t.name||'',t.branch||'',t.start||'',t.end||'',pStatus(t).label,t.items||'',t.note||''];});
+  var A=promoArr();if(!A.length)return toast('Chưa có dữ liệu để xuất');
+  var months=promoMonths();
+  var header=['Mã','Chi nhánh'].concat(PROMO_COLS.map(function(c){return c.label;})).concat(months.map(function(m){return 'KQ '+m;}));
+  var rows=A.map(function(t){
+    var r=[t.taskId,t.branch||''].concat(PROMO_COLS.map(function(c){return t[c.k]||'';}));
+    months.forEach(function(m){r.push((t.results&&t.results[m])||'');});
+    return r;
+  });
   var ws=XLSX.utils.aoa_to_sheet([header].concat(rows));
   var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'CTKM');
   XLSX.writeFile(wb,'BaoCao_CTKM.xlsx');
