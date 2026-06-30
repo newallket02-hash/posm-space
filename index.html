@@ -408,7 +408,7 @@ function dOver(e,col){e.preventDefault();e.currentTarget.classList.add('drag');}
 function dLeave(e){e.currentTarget.classList.remove('drag');}
 function dDrop(e,col){e.preventDefault();e.currentTarget.classList.remove('drag');if(dragId){setCol(dragId,col);}dragId=null;}
 
-function setTag(t){filter.tag=(filter.tag===t&&t!=='all')?'all':t;if(v==='promo')renderPromos();
+function setTag(t){filter.tag=(filter.tag===t&&t!=='all')?'all':t;if(t==='promo')renderPromos();
   render();}
 function onSearch(v){filter.q=v;render();}
 function clearSearch(){filter.q='';const el=document.getElementById('searchInput');if(el)el.value='';render();}
