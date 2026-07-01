@@ -225,6 +225,8 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://unpkg.com/tabulator-tables@5.6.1/dist/css/tabulator.min.css" rel="stylesheet">
+<script src="https://unpkg.com/tabulator-tables@5.6.1/dist/js/tabulator.min.js"></script>
 </head>
 <body>
 
@@ -265,6 +267,7 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
     <button class="tab on" id="tabPosm" onclick="switchView('posm')">📋 Tiến độ POSM</button>
     <button class="tab" id="tabDisp" onclick="switchView('display')">🪧 Standee · Tentcard · TV</button>
     <button class="tab" id="tabPromo" onclick="switchView('promo')">📣 Báo cáo CTKM</button>
+    <button class="tab" id="tabTable" onclick="switchView('table')">🧮 Bảng (Excel)</button>
   </div>
 
   <div class="prog" id="posmProg">
@@ -282,6 +285,18 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
 </div>
 
 <div class="board" id="board"></div>
+<div id="tableWrap" style="display:none;padding:0 14px 24px">
+  <input class="inp" style="width:100%;padding:11px;border:1px solid #e0d8c8;border-radius:10px;margin:8px 0 10px"
+    placeholder="Thêm nhanh: @Q2 #PDX102 !Gấp Standee sảnh chính | ghi chú nội dung… (Enter)"
+    onkeydown="if(event.key==='Enter')quickAdd(this)">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+    <button class="btn primary" onclick="tblAddRow()">＋ Thêm dòng</button>
+    <button class="btn" onclick="openImportXls()">📥 Nhập Excel (map cột)</button>
+    <button class="btn" onclick="exportExcel()">📊 Xuất Excel</button>
+    <span class="hint" style="color:var(--muted);font-size:12px">Kéo ⠿ để đổi thứ tự · double-click ô để sửa</span>
+  </div>
+  <div id="tblGrid"></div>
+</div>
 
 <div id="displayWrap" style="display:none">
   <div class="searchbar" style="margin:12px 0"><span class="sicon">🔍</span><input id="dSearchInput" placeholder="Tìm: vị trí · nội dung · khu vực · ghi chú…" oninput="dfilter.q=this.value;renderDisplays()"><span class="scount" id="dSearchCount"></span></div>
@@ -534,9 +549,38 @@ function attachPdxImg(id,inp){
     toast('\u0110\u00e3 \u0111\u00ednh k\u00e8m \u1ea3nh P\u0110X'); if(inp) inp.value='';
   });
 }
-function pdxFeed(id,file){ if(!file || !/^image\//.test(file.type)){ toast('Chỉ nhận file ảnh'); return; } const inp=document.getElementById('pdxf_'+id); if(!inp){ return; } const dt=new DataTransfer(); dt.items.add(file); inp.files=dt.files; attachPdxImg(id,inp); }
-function pdxDrop(e,id){ e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.remove('dzover'); const f=e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if(f) pdxFeed(id,f); }
-function pdxPaste(e,id){ const items=(e.clipboardData || window.clipboardData)?.items || []; for(const it of items){ if(it.type && it.type.indexOf('image')===0){ const f=it.getAsFile(); if(f){ e.preventDefault(); pdxFeed(id,f); break; } } } }
+function pdxFeed(id,file){
+  if(!file || !/^image\//.test(file.type)){ toast('Chỉ nhận file ảnh'); return; }
+  if(!store.tasks[id]){ return; }
+  imgToJpegDataURL(file, 480, 0.6, function(data, reason){
+    if(!data){ toast(imgErrMsg(reason==='read'?'read':'decode')); return; }
+    const t = store.tasks[id];
+    if(!Array.isArray(t.pdxImgs)){ t.pdxImgs = t.pdxImg ? [t.pdxImg] : []; }
+    t.pdxImgs.push(data);
+    t.pdxImg = t.pdxImgs[0];
+    t.updated = todayStr(0);
+    save(); queuePush(id);
+    if(typeof renderPdxThumbs==='function' && document.getElementById('pdxThumbs_'+id)) renderPdxThumbs(id);
+    if(typeof __tbl!=='undefined' && __tbl){ __tbl.updateData([Object.assign({taskId:id},t)]); }
+    if(t.kind==='display' && typeof openDisplay==='function'){ openDisplay(id); }
+    render();
+    toast('Đã đính kèm ảnh PĐX');
+  });
+}
+function pdxDrop(e,id){
+  e.preventDefault(); e.stopPropagation();
+  if(e.currentTarget.classList) e.currentTarget.classList.remove('dzover');
+  const files = e.dataTransfer && e.dataTransfer.files ? Array.from(e.dataTransfer.files) : [];
+  files.filter(f=>/^image\//.test(f.type)).forEach(f=>pdxFeed(id,f));
+}
+function pdxPaste(e,id){
+  const items=(e.clipboardData||window.clipboardData)?.items||[];
+  for(const it of items){
+    if(it.type && it.type.indexOf('image')===0){
+      const f=it.getAsFile(); if(f){ e.preventDefault(); pdxFeed(id,f); }
+    }
+  }
+}
 function imgList(t){
   if(!t) return [];
   if(Array.isArray(t.imgs)) return t.imgs.filter(Boolean);
@@ -978,6 +1022,249 @@ const CATALOG_Q2=[{id:"C2_001",dtype:"TV",area:"Sảnh chờ",floor:"G",dept:"HE
 {id:"C2_042",dtype:"Standee",area:"Không trưng bày",floor:"Q2",dept:"HEALING WORLD",spot:"Standee art snackbar",content:"",note:"Ghi chú đợt 14/4: Đã cất vào phòng MKT Q2, SL: 1"},
 {id:"C2_043",dtype:"Standee",area:"Snackbar",floor:"1",dept:"HEALING WORLD",spot:"Standee VIP SNACKBAR",content:"",note:"Yêu cầu mới đợt 14/4"}];
 const DTYPES=['TV','Standee','Tentcard','Khác'];
+/* ================= POSM: TABLE VIEW + QUICK-ADD + EXCEL IMPORT ================= */
+let __tbl=null, __xlsRows=null, __xlsHeaders=[], __xlsMap={};
+
+function ensureOrder(){
+  const vals=Object.values(store.tasks); let needed=false;
+  vals.forEach(t=>{ if(typeof t.order!=='number') needed=true; });
+  if(needed){
+    vals.sort((a,b)=>{const pa=(a.prio==='Gấp')?0:1,pb=(b.prio==='Gấp')?0:1;
+      if(pa!==pb)return pa-pb;const da=daysLeft(a),db=daysLeft(b);
+      return (da==null?9999:da)-(db==null?9999:db);});
+    vals.forEach((t,i)=>{ if(typeof t.order!=='number') t.order=i*10; }); save();
+  }
+}
+function tblData(){ ensureOrder();
+  return Object.values(store.tasks).filter(t=>t.kind!=='display'&&t.kind!=='promo')
+    .sort((a,b)=>(a.order||0)-(b.order||0)); }
+
+function buildTable(){
+  const data=tblData(); const colOpts={}; COLS.forEach(c=>colOpts[c.id]=c.label);
+  const pdxFormatter=(cell)=>{const t=cell.getRow().getData();
+    const has=(t.pdxImgs&&t.pdxImgs.length)||t.pdxImg;
+    const link=t.pdxLink?'<a href="'+t.pdxLink+'" target="_blank" title="'+t.pdxLink+'">🔗</a>':'';
+    return '<span style="cursor:pointer">'+(has?'🖼️':'')+' '+link+' '+(t.pdx||'')+'</span>';};
+  const cfg={ data, layout:'fitDataStretch', height:'calc(100vh - 230px)',
+    movableRows:true, index:'taskId',
+    placeholder:'Chưa có task. Bấm ＋ Thêm dòng hoặc 📥 Nhập Excel.',
+    columns:[
+      {rowHandle:true,formatter:'handle',headerSort:false,frozen:true,width:36,title:'⠿'},
+      {title:'ID',field:'taskId',width:80,editable:false},
+      {title:'Chi nhánh',field:'branch',width:120,editor:'list',
+        editorParams:{values:BR_LIST,autocomplete:true,freetext:true}},
+      {title:'Tên task / sản phẩm',field:'name',widthGrow:3,minWidth:200,editor:'input'},
+      {title:'Nội dung',field:'detail',widthGrow:3,minWidth:200,formatter:'textarea',editor:'textarea'},
+      {title:'Người ĐX',field:'requester',width:120,editor:'input'},
+      {title:'PĐX',field:'pdx',width:120,editor:'input',formatter:pdxFormatter,
+        cellClick:(e,cell)=>openPdxEditor(cell.getRow().getData().taskId)},
+      {title:'Ưu tiên',field:'prio',width:110,editor:'list',editorParams:{values:PRIOS},
+        formatter:(c)=>{const v=c.getValue();const cl=v==='Gấp'?'#c0392b':(v==='Trung bình'?'#c79a3a':'#888');
+          return '<span style="color:'+cl+';font-weight:600">'+(v||'—')+'</span>';}},
+      {title:'Trạng thái',field:'col',width:150,editor:'list',editorParams:{values:colOpts},
+        formatter:(c)=>colOpts[c.getValue()]||c.getValue()},
+      {title:'Ngày đề xuất',field:'proposed',width:120,editor:'input'},
+      {title:'Deadline',field:'deadline',width:120,editor:'input',
+        formatter:(c)=>{const t=c.getRow().getData();const dl=daysLeft(t);const v=c.getValue()||'';
+          if(dl!=null&&dl<0&&t.col!=='done')return '<span style="color:#c0392b;font-weight:600">'+v+' ⏰</span>';return v;}},
+      {title:'Ghi chú',field:'note',widthGrow:2,minWidth:140,editor:'textarea'},
+      {title:'',width:44,headerSort:false,formatter:()=>'🗑️',
+        cellClick:(e,cell)=>{const id=cell.getRow().getData().taskId;
+          if(confirm('Xoá task '+id+'?')){ delTask(id); cell.getRow().delete(); }}}
+    ]};
+  if(__tbl){ __tbl.replaceData(data); return; }
+  __tbl=new Tabulator('#tblGrid',cfg);
+  __tbl.on('cellEdited',(cell)=>{ const id=cell.getRow().getData().taskId;
+    upd(id,cell.getField(),cell.getValue()); });
+  __tbl.on('rowMoved',()=>{ const rows=__tbl.getRows();
+    rows.forEach((r,i)=>{const id=r.getData().taskId; if(store.tasks[id]) store.tasks[id].order=i*10;});
+    save(); rows.forEach(r=>{const id=r.getData().taskId; if(store.tasks[id]) queuePush(id);}); });
+}
+function tblAddRow(){
+  const id='TK'+String(Date.now()).slice(-6);
+  const mx=Math.max(0,...Object.values(store.tasks).map(t=>t.order||0));
+  store.tasks[id]={taskId:id,pdx:'',pdxLink:'',pdxImgs:[],requester:'',branch:'',
+    name:'(task mới)',detail:'',size:'',purpose:'',proposed:'',deadline:'',
+    prio:'—',col:'intake',note:'',stuck:false,demo:false,order:mx+10,updated:todayStr(0)};
+  save(); queuePush(id); if(__tbl) __tbl.addRow(store.tasks[id],false);
+  toast('Đã thêm dòng — điền thông tin rồi Lưu');
+}
+
+function openPdxEditor(id){
+  const t=store.tasks[id]; if(!t)return;
+  const esc=s=>(s||'').replace(/"/g,'&quot;');
+  document.getElementById('drawTitle').textContent='PĐX · '+id;
+  document.getElementById('drawBody').innerHTML=
+    '<label class="hint">Link phiếu đề xuất (PĐX)</label>'+
+    '<input id="pdxLinkInp" class="inp" style="width:100%;margin:6px 0 12px;padding:10px;border:1px solid #e0d8c8;border-radius:8px" '+
+      'placeholder="https://... hoặc mã PĐX" value="'+esc(t.pdxLink)+'" '+
+      'onchange="upd(\''+id+'\',\'pdxLink\',this.value); if(__tbl)__tbl.updateData([{taskId:\''+id+'\',pdxLink:this.value}])">'+
+    '<div id="pdxDrop_'+id+'" style="border:2px dashed #cbb98a;border-radius:12px;padding:22px;text-align:center;color:#8a857d;cursor:pointer" '+
+      'ondragover="event.preventDefault();this.style.background=\'#f6efdc\'" '+
+      'ondragleave="this.style.background=\'\'" '+
+      'ondrop="pdxDrop(event,\''+id+'\');this.style.background=\'\'" '+
+      'onclick="document.getElementById(\'pdxFileT_'+id+'\').click()">'+
+      '🖼️ Kéo-thả ảnh PĐX vào đây, hoặc bấm để chọn file</div>'+
+    '<input type="file" id="pdxFileT_'+id+'" accept="image/*" multiple style="display:none" '+
+      'onchange="Array.from(this.files).forEach(f=>pdxFeed(\''+id+'\',f))">'+
+    '<div id="pdxThumbs_'+id+'" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"></div>';
+  openScrim(); renderPdxThumbs(id);
+}
+function refreshPdxCell(id){ renderPdxThumbs(id);
+  if(__tbl) __tbl.updateData([Object.assign({taskId:id},store.tasks[id])]); }
+function renderPdxThumbs(id){
+  const t=store.tasks[id]; const box=document.getElementById('pdxThumbs_'+id); if(!box)return;
+  const imgs=t.pdxImgs||(t.pdxImg?[t.pdxImg]:[]);
+  box.innerHTML=imgs.map((src,i)=>'<div style="position:relative">'+
+     '<img src="'+src+'" style="width:88px;height:88px;object-fit:cover;border-radius:8px;border:1px solid #e6dfce">'+
+     '<button onclick="rmPdxImg(\''+id+'\','+i+')" style="position:absolute;top:-6px;right:-6px;border:none;background:#c0392b;color:#fff;border-radius:50%;width:20px;height:20px;cursor:pointer">×</button>'+
+   '</div>').join('')||'<span class="hint" style="color:#bbb">Chưa có ảnh</span>';
+}
+function rmPdxImg(id,i){ const t=store.tasks[id]; if(!t)return;
+  if(t.pdxImgs){ t.pdxImgs.splice(i,1); t.pdxImg=t.pdxImgs[0]||''; upd(id,'pdxImgs',t.pdxImgs); } else { upd(id,'pdxImg',''); }
+  renderPdxThumbs(id); if(__tbl)__tbl.updateData([Object.assign({taskId:id},t)]); }
+
+function quickParse(text){
+  let s=' '+text.trim()+' ';
+  const t={taskId:'',pdx:'',pdxLink:'',requester:'',branch:'',name:'',detail:'',
+           prio:'—',col:'intake',note:'',proposed:'',deadline:'',stuck:false,demo:false,pdxImgs:[]};
+  const brMap={q1:'Quận 1',q2:'Quận 2',q7:'Quận 7',td:'Thủ Đức',dn:'Đà Nẵng'};
+  s=s.replace(/@(\S+)/g,(m,g)=>{const k=g.toLowerCase();
+     t.branch=brMap[k]||(detectBranch(g)!=='Không rõ'?detectBranch(g):g);return ' ';});
+  s=s.replace(/#(\S+)/g,(m,g)=>{const num=g.replace(/[^0-9]/g,'');
+     t.pdx=num?('PDX'+num.padStart(3,'0')):g;return ' ';});
+  s=s.replace(/!(\S+)/g,(m,g)=>{t.prio=detectPrio(g)!=='—'?detectPrio(g):
+     (/g(ấ|a)p|urgent/i.test(g)?'Gấp':(/trung/i.test(g)?'Trung bình':'Bình thường'));return ' ';});
+  s=s.replace(/link:(\S+)/i,(m,g)=>{t.pdxLink=g;return ' ';});
+  s=s.replace(/(https?:\/\/\S+)/i,(m,g)=>{if(!t.pdxLink)t.pdxLink=g;return ' ';});
+  const rest=s.replace(/\s+/g,' ').trim(); const parts=rest.split('|');
+  t.name=(parts[0]||'(task mới)').trim().slice(0,120);
+  t.detail=(parts.slice(1).join('|')||'').trim();
+  return t;
+}
+function quickAdd(inputEl){
+  const raw=(inputEl.value||'').trim(); if(!raw)return;
+  const p=quickParse(raw); const id='TK'+String(Date.now()).slice(-6);
+  const mx=Math.max(0,...Object.values(store.tasks).map(t=>t.order||0));
+  store.tasks[id]=Object.assign(p,{taskId:id,order:mx+10,updated:todayStr(0)});
+  save(); queuePush(id); inputEl.value='';
+  if(view==='table'&&__tbl){ __tbl.addRow(store.tasks[id],false); } else { render(); }
+  toast('Đã thêm: '+p.name);
+}
+
+const XLS_FIELDS=[
+  {f:'name',label:'Tên task / sản phẩm',req:true},{f:'branch',label:'Chi nhánh'},
+  {f:'requester',label:'Người đề xuất'},{f:'pdx',label:'Số phiếu (PĐX)'},
+  {f:'pdxLink',label:'Link phiếu đề xuất'},{f:'detail',label:'Nội dung'},
+  {f:'prio',label:'Ưu tiên'},{f:'col',label:'Trạng thái / khâu'},
+  {f:'proposed',label:'Ngày đề xuất'},{f:'deadline',label:'Deadline'},
+  {f:'note',label:'Ghi chú'},{f:'taskId',label:'Task ID (để gộp/ghi đè)'}];
+function guessField(h){const s=(h||'').toLowerCase();
+  if(/tên|ten|sản phẩm|san pham|task|tiêu đề/.test(s)&&!/id/.test(s))return 'name';
+  if(/chi nhánh|chi nhanh|branch|quận|quan/.test(s))return 'branch';
+  if(/người|nguoi|đề xuất|de xuat|requester/.test(s)&&!/link|phiếu|phieu/.test(s))return 'requester';
+  if(/link|url|đường dẫn|duong dan/.test(s))return 'pdxLink';
+  if(/phiếu|phieu|pdx|pđx/.test(s))return 'pdx';
+  if(/nội dung|noi dung|mô tả|mo ta|detail/.test(s))return 'detail';
+  if(/ưu tiên|uu tien|prio|gấp/.test(s))return 'prio';
+  if(/trạng thái|trang thai|tiến độ|tien do|khâu|khau|status/.test(s))return 'col';
+  if(/deadline|hạn|han/.test(s))return 'deadline';
+  if(/ngày đề xuất|ngay de xuat|proposed/.test(s))return 'proposed';
+  if(/ghi chú|ghi chu|note/.test(s))return 'note';
+  if(/\bid\b|task id|mã task|ma task/.test(s))return 'taskId';
+  return '';}
+function openImportXls(){
+  __xlsRows=null;__xlsHeaders=[];__xlsMap={};
+  document.getElementById('drawTitle').textContent='Nhập Excel — chọn file & map cột';
+  document.getElementById('drawBody').innerHTML=
+    '<div class="hint">Chọn file <b>.xlsx / .xls / .csv</b>. Dòng đầu là <b>tiêu đề cột</b>.</div>'+
+    '<div id="xlsDrop" style="margin:10px 0;border:2px dashed #cbb98a;border-radius:12px;padding:26px;text-align:center;color:#8a857d;cursor:pointer" '+
+      'ondragover="event.preventDefault();this.style.background=\'#f6efdc\'" '+
+      'ondragleave="this.style.background=\'\'" '+
+      'ondrop="event.preventDefault();this.style.background=\'\';xlsReadFile(event.dataTransfer.files[0])" '+
+      'onclick="document.getElementById(\'xlsFile\').click()">📄 Kéo-thả file hoặc bấm để chọn</div>'+
+    '<input type="file" id="xlsFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="xlsReadFile(this.files[0])">'+
+    '<div id="xlsMapArea"></div>';
+  openScrim();
+}
+function xlsReadFile(file){
+  if(!file)return; if(typeof XLSX==='undefined'){toast('Thư viện Excel chưa tải');return;}
+  const rd=new FileReader();
+  rd.onload=(ev)=>{try{
+    const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const aoa=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
+    const rows=aoa.filter(r=>r.some(c=>(''+c).trim()!==''));
+    if(rows.length<2){toast('Cần ≥1 header + 1 dòng dữ liệu');return;}
+    __xlsHeaders=rows[0].map((h,i)=>(''+h).trim()||('Cột '+(i+1)));
+    __xlsRows=rows.slice(1).map(r=>{const o={};__xlsHeaders.forEach((h,i)=>o['__c'+i]=(''+(r[i]??'')).trim());return o;});
+    __xlsMap={}; __xlsHeaders.forEach((h,i)=>{const f=guessField(h); if(f&&__xlsMap[f]===undefined)__xlsMap[f]=i;});
+    renderXlsMap();
+  }catch(err){toast('Không đọc được file: '+err.message);}};
+  rd.readAsArrayBuffer(file);
+}
+function renderXlsMap(){
+  const area=document.getElementById('xlsMapArea'); if(!area)return;
+  const esc=s=>(''+s).replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const opt=(sel)=>'<option value="">— không dùng —</option>'+
+    __xlsHeaders.map((h,i)=>'<option value="'+i+'" '+(sel==i?'selected':'')+'>'+esc(h)+'</option>').join('');
+  const rowsHtml=XLS_FIELDS.map(fd=>'<tr>'+
+      '<td style="padding:6px 8px;font-weight:600">'+fd.label+(fd.req?' <span style="color:#c0392b">*</span>':'')+'</td>'+
+      '<td style="padding:6px 8px"><select class="inp" style="width:100%;padding:8px;border:1px solid #e0d8c8;border-radius:8px" '+
+        'onchange="xlsSetMap(\''+fd.f+'\',this.value)">'+opt(__xlsMap[fd.f])+'</select></td></tr>').join('');
+  area.innerHTML='<div class="divider"></div>'+
+    '<div class="hint" style="margin-bottom:8px"><b>'+__xlsRows.length+'</b> dòng. Ánh xạ cột file → trường task:</div>'+
+    '<table style="width:100%;border-collapse:collapse;font-size:13px">'+rowsHtml+'</table>'+
+    '<div id="xlsPreview" style="margin-top:12px"></div>'+
+    '<div style="margin-top:14px;display:flex;gap:8px">'+
+      '<button class="btn primary" onclick="doImportExcel(false)">📥 Nhập (gộp theo Task ID)</button>'+
+      '<button class="btn" onclick="doImportExcel(true)">➕ Thêm mới tất cả</button>'+
+      '<button class="btn" onclick="closeDraw()">Huỷ</button></div>';
+  renderXlsPreview();
+}
+function xlsSetMap(field,val){ if(val==='')delete __xlsMap[field]; else __xlsMap[field]=+val; renderXlsPreview(); }
+function renderXlsPreview(){
+  const box=document.getElementById('xlsPreview'); if(!box)return;
+  if(__xlsMap.name===undefined){box.innerHTML='<div class="hint" style="color:#c0392b">⚠ Cần map ít nhất trường <b>Tên task</b>.</div>';return;}
+  const esc=s=>(''+s).replace(/</g,'&lt;');
+  const sample=__xlsRows.slice(0,3).map(r=>xlsRowToTask(r));
+  box.innerHTML='<div class="hint" style="margin-bottom:6px">Xem trước 3 dòng đầu:</div>'+
+    sample.map(t=>'<div style="border:1px solid #eee;border-radius:8px;padding:8px;margin-bottom:6px;font-size:12px">'+
+      '<b>'+esc(t.name)+'</b> · '+esc(t.branch||'—')+' · '+esc(t.prio)+' · '+esc(t.col)+
+      (t.pdx?' · '+esc(t.pdx):'')+(t.deadline?' · ⏰'+esc(t.deadline):'')+'</div>').join('');
+}
+function xlsRowToTask(r){
+  const g=(f)=>__xlsMap[f]!==undefined?(r['__c'+__xlsMap[f]]||''):'';
+  const t={ taskId:g('taskId'), name:(g('name')||'(task mới)').slice(0,120),
+    branch:g('branch')?(detectBranch(g('branch'))!=='Không rõ'?detectBranch(g('branch')):g('branch')):'',
+    requester:g('requester'), pdx:g('pdx'), pdxLink:g('pdxLink'), detail:g('detail'),
+    prio:g('prio')?mapPrio(g('prio')):'—', col:g('col')?bucket(g('col')):'intake',
+    proposed:g('proposed'), deadline:g('deadline'), note:g('note'),
+    stuck:false, demo:false, pdxImgs:[] };
+  if(COL_IDS.includes(g('col'))) t.col=g('col');
+  return t;
+}
+function doImportExcel(forceNew){
+  if(!__xlsRows||__xlsMap.name===undefined){toast('Cần map trường Tên task');return;}
+  let added=0,merged=0; let ord=Math.max(0,...Object.values(store.tasks).map(t=>t.order||0));
+  __xlsRows.forEach(r=>{
+    const t=xlsRowToTask(r); let id=t.taskId;
+    if(!forceNew&&id&&store.tasks[id]){
+      const cur=store.tasks[id];
+      Object.keys(t).forEach(k=>{ if(t[k]!==''&&t[k]!=null&&!(Array.isArray(t[k])&&!t[k].length)) cur[k]=t[k]; });
+      cur.updated=todayStr(0); queuePush(id); merged++;
+    }else{
+      id=(id&&!store.tasks[id])?id:'TK'+String(Date.now()).slice(-6)+Math.floor(Math.random()*90+10);
+      ord+=10; store.tasks[id]=Object.assign(t,{taskId:id,order:ord,updated:todayStr(0)});
+      queuePush(id); added++;
+    }
+  });
+  save(); closeDraw();
+  if(view==='table'){ buildTable(); } else { render(); }
+  toast('Đã nhập: +'+added+' mới'+(merged?', cập nhật '+merged:''));
+}
+/* =============== HẾT KHỐI TABLE/QUICK-ADD/IMPORT =============== */
+
 let view='posm';
 let dfilter={dtype:'',branch:'',area:'',need:false,q:''};
 const FLOOR_ORDER={'B':0,'G':1,'G-1':2,'1':3,'2':4,'3':5};
@@ -994,10 +1281,13 @@ function switchView(v){view=v;
   document.getElementById('tabPosm').classList.toggle('on',v==='posm');
   document.getElementById('tabDisp').classList.toggle('on',v==='display');
   document.getElementById('tabPromo').classList.toggle('on',v==='promo');
+  const tt=document.getElementById('tabTable'); if(tt) tt.classList.toggle('on',v==='table');
   const set=(id,s)=>{const e=document.getElementById(id);if(e)e.style.display=s?'':'none';};
   const posm=(v==='posm');
   ['posmProg','posmSearch','filt','board'].forEach(id=>set(id,posm));
-  set('displayWrap',v==='display');set('promoWrap',v==='promo');set('btnTunhap',posm);set('btnExcel',posm);
+  set('displayWrap',v==='display');set('promoWrap',v==='promo');set('tableWrap',v==='table');
+  set('btnTunhap',posm);set('btnExcel',posm);
+  if(v==='table'){ buildTable(); }
   render();}
 function dCardHTML(t){
   const e=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
