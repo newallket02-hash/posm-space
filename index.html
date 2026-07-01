@@ -205,6 +205,24 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
   .dtable tr.empty:hover td{background:#f0ede4}
   .dtable tr.empty td:first-child{border-left:3px solid #c9c2b4}
 
+/* === Thanh thong bao lich su chinh sua === */
+.notifWrap{position:relative;display:inline-block}
+.notifBtn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:var(--r-sm);padding:6px 9px;font:inherit;font-size:13px;cursor:pointer;position:relative;transition:.12s}
+.notifBtn:hover{border-color:var(--gold);color:var(--gold)}
+.notifBadge{position:absolute;top:-6px;right:-6px;min-width:16px;height:16px;padding:0 4px;background:var(--red);color:#fff;border-radius:20px;font-size:10px;font-weight:800;line-height:16px;text-align:center;display:none}
+.notifBadge.on{display:block}
+.notifPanel{position:absolute;top:calc(100% + 8px);right:0;width:320px;max-height:400px;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 12px 32px rgba(0,0,0,.16);z-index:60;display:none}
+.notifPanel.on{display:block}
+.notifHead{display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--line);font-weight:800;font-size:13px}
+.notifHead .sp{flex:1}
+.notifClear{border:none;background:none;color:var(--muted);font:inherit;font-size:11.5px;font-weight:600;cursor:pointer}
+.notifClear:hover{color:var(--gold)}
+.notifItem{padding:10px 13px;border-bottom:1px solid var(--line2);font-size:12.5px;line-height:1.5}
+.notifItem:last-child{border-bottom:none}
+.notifItem b{color:var(--gold)}
+.notifItem .t{color:var(--muted);font-size:11px;margin-top:2px}
+.notifEmpty{padding:20px 13px;text-align:center;color:var(--muted);font-size:12px}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -231,6 +249,13 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
     <button class="btn" id="btnTunhap" onclick="openDraw('add')">✍ Tự nhập</button>
     <button class="btn" id="btnExcel" onclick="exportExcel()">📊 Excel</button>
     <!-- Hiển thị tên tài khoản đang đăng nhập + nút Đăng xuất -->
+    <div class="notifWrap">
+      <button class="notifBtn" id="notifBtn" onclick="toggleNotif()" title="Lịch sử chỉnh sửa">🔔<span class="notifBadge" id="notifBadge"></span></button>
+      <div class="notifPanel" id="notifPanel">
+        <div class="notifHead">🔔 Hoạt động<div class="sp"></div><button class="notifClear" onclick="clearNotifUnread()">Đánh dấu đã đọc</button></div>
+        <div id="notifList"><div class="notifEmpty">Chưa có hoạt động nào</div></div>
+      </div>
+    </div>
     <span id="whoami" style="font-weight:600;font-size:12px;color:var(--soft);margin-left:4px"></span>
     <button class="btn sm" onclick="logout()">🚪 Đăng xuất</button>
     <button class="btn sm" onclick="openDraw('data')">⋯ Dữ liệu</button>
@@ -1377,6 +1402,105 @@ function showWhoami(){
   }catch(e){}
 }
 showWhoami();
+/* === Thanh thong bao: ghi + hien thi lich su chinh sua ID === */
+var __activity = [];        // nhat ky lay tu server
+var __pendingActs = [];     // cac ban ghi cho gui len server
+var __notifSeen = parseInt(localStorage.getItem('posm_notif_seen')||'0',10);
+
+function __curUser(){
+  try{ var s=JSON.parse(localStorage.getItem('posm_session')); return (s&&s.name)?s.name:'Ai đó'; }catch(e){ return 'Ai đó'; }
+}
+function __taskLabel(id){
+  try{ if(typeof board!=='undefined' && board.tasks && board.tasks[id] && board.tasks[id].name) return board.tasks[id].name; }catch(e){}
+  return id;
+}
+function __relTime(ts){
+  var d=Math.floor((Date.now()-ts)/1000);
+  if(d<10) return 'vừa xong';
+  if(d<60) return d+' giây trước';
+  var m=Math.floor(d/60); if(m<60) return m+' phút trước';
+  var h=Math.floor(m/60); if(h<24) return h+' giờ trước';
+  var day=Math.floor(h/24); return day+' ngày trước';
+}
+function __esc(s){ var e=document.createElement('div'); e.textContent=(s==null?'':String(s)); return e.innerHTML; }
+
+// Ghi lai moi khi mot task duoc danh dau thay doi (queuePush)
+if(typeof queuePush==='function' && !queuePush.__wrapped){
+  var __origQueuePush = queuePush;
+  queuePush = function(id){
+    try{ __pendingActs.push({ id:id, name:__taskLabel(id), by:__curUser(), at:Date.now() }); }catch(e){}
+    return __origQueuePush.apply(this, arguments);
+  };
+  queuePush.__wrapped = true;
+  window.queuePush = queuePush;
+}
+
+// Gan cac ban ghi cho vao moi lan POST co upsert
+if(typeof apiPost==='function' && !apiPost.__wrapped){
+  var __origApiPost = apiPost;
+  apiPost = function(p){
+    try{
+      if(p && p.upsert && p.upsert.length && __pendingActs.length){
+        p.activity = __pendingActs.slice(); __pendingActs = [];
+      }
+    }catch(e){}
+    return __origApiPost.apply(this, arguments);
+  };
+  apiPost.__wrapped = true;
+  window.apiPost = apiPost;
+}
+
+// Doc activity tu server sau moi lan pullShared
+if(typeof pullShared==='function' && !pullShared.__wrapped){
+  var __origPull = pullShared;
+  pullShared = async function(silent){
+    var r = await __origPull.apply(this, arguments);
+    try{
+      var b = await apiGet();
+      if(b && Array.isArray(b.activity)){ __activity = b.activity; renderNotif(); }
+    }catch(e){}
+    return r;
+  };
+  pullShared.__wrapped = true;
+  window.pullShared = pullShared;
+}
+
+function renderNotif(){
+  var list=document.getElementById('notifList');
+  var badge=document.getElementById('notifBadge');
+  if(!list) return;
+  var acts=(__activity||[]).slice().sort(function(x,y){return (y.at||0)-(x.at||0);});
+  if(!acts.length){ list.innerHTML='<div class="notifEmpty">Chưa có hoạt động nào</div>'; }
+  else{
+    list.innerHTML = acts.map(function(a){
+      return '<div class="notifItem"><b>'+__esc(a.by)+'</b> vừa cập nhật <b>'+__esc(a.name||a.id)+'</b><div class="t">'+__relTime(a.at)+'</div></div>';
+    }).join('');
+  }
+  var unseen = acts.filter(function(a){return (a.at||0)>__notifSeen;}).length;
+  if(badge){ badge.textContent = unseen>9?'9+':String(unseen); badge.classList.toggle('on', unseen>0); }
+}
+function toggleNotif(){
+  var p=document.getElementById('notifPanel'); if(!p) return;
+  p.classList.toggle('on');
+  if(p.classList.contains('on')) renderNotif();
+}
+function clearNotifUnread(){
+  __notifSeen = Date.now();
+  localStorage.setItem('posm_notif_seen', String(__notifSeen));
+  renderNotif();
+}
+// Dong panel khi bam ra ngoai
+document.addEventListener('click', function(ev){
+  var w=ev.target.closest && ev.target.closest('.notifWrap');
+  if(!w){ var p=document.getElementById('notifPanel'); if(p) p.classList.remove('on'); }
+});
+// Cap nhat thoi gian tuong doi moi 30s
+setInterval(function(){ var p=document.getElementById('notifPanel'); if(p&&p.classList.contains('on')) renderNotif(); }, 30000);
+// Tu dong dong bo tu server moi 12s (khong can bam Tai moi)
+setInterval(function(){ try{ if(typeof pullShared==='function') pullShared(true); }catch(e){} }, 12000);
+// Tai lan dau
+setTimeout(function(){ try{ pullShared(true); }catch(e){} }, 1500);
+
 boot();
 </script>
 </body>
