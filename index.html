@@ -496,19 +496,13 @@ function zoomImg(src){
 
 // === PĐX original image: attach (compress 480px) + drag/paste, stored in t.pdxImg (added) ===
 function attachPdxImg(id,inp){
-  const file=inp.files&&inp.files[0]; if(!file) return;
-  const rd=new FileReader();
-  rd.onload=e=>{ const im=new Image();
-    im.onload=()=>{ const max=480; let w=im.width,h2=im.height;
-      if(w>h2&&w>max){h2=Math.round(h2*max/w);w=max;} else if(h2>=w&&h2>max){w=Math.round(w*max/h2);h2=max;}
-      const cv=document.createElement('canvas');cv.width=w;cv.height=h2;
-      cv.getContext('2d').drawImage(im,0,0,w,h2);
-      let data;try{data=cv.toDataURL('image/jpeg',0.6);}catch(err){data=e.target.result;}
-      store.tasks[id].pdxImg=data;store.tasks[id].updated=todayStr(0);save();
-      (store.tasks[id].kind==='display'?openDisplay:openTask)(id);render();queuePush(id);
-      toast('Đã đính kèm ảnh PĐX');
-    }; im.src=e.target.result; };
-  rd.readAsDataURL(file);
+  var file=inp.files&&inp.files[0]; if(!file) return;
+  imgToJpegDataURL(file, 480, 0.6, function(data, reason){
+    if(!data){ toast(imgErrMsg(reason==='read'?'read':'decode')); if(inp) inp.value=''; return; }
+    store.tasks[id].pdxImg=data; store.tasks[id].updated=todayStr(0); save();
+    (store.tasks[id].kind==='display'?openDisplay:openTask)(id); render(); queuePush(id);
+    toast('\u0110\u00e3 \u0111\u00ednh k\u00e8m \u1ea3nh P\u0110X'); if(inp) inp.value='';
+  });
 }
 function pdxFeed(id,file){ if(!file || !/^image\//.test(file.type)){ toast('Chỉ nhận file ảnh'); return; } const inp=document.getElementById('pdxf_'+id); if(!inp){ return; } const dt=new DataTransfer(); dt.items.add(file); inp.files=dt.files; attachPdxImg(id,inp); }
 function pdxDrop(e,id){ e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.remove('dzover'); const f=e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if(f) pdxFeed(id,f); }
@@ -530,6 +524,46 @@ function imgsGridHTML(id){
   }).join('');
   return '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px">'+cells+'</div>';
 }
+
+function imgToJpegDataURL(file, maxDim, quality, cb){
+  maxDim = maxDim || 480; quality = (quality==null?0.6:quality);
+  function draw(w0,h0,drawer){
+    var max=maxDim, w=w0, h2=h0;
+    if(w>h2&&w>max){h2=Math.round(h2*max/w);w=max;} else if(h2>=w&&h2>max){w=Math.round(w*max/h2);h2=max;}
+    var cv=document.createElement('canvas'); cv.width=w; cv.height=h2;
+    try{ drawer(cv.getContext('2d'), w, h2); }catch(e){ cb(null,'draw'); return; }
+    var data; try{ data=cv.toDataURL('image/jpeg', quality); }catch(err){ cb(null,'export'); return; }
+    if(!data || data.indexOf('data:image/jpeg')!==0){ cb(null,'export'); return; }
+    cb(data, null);
+  }
+  if(typeof createImageBitmap === 'function'){
+    var opt; try{ opt={imageOrientation:'from-image'}; }catch(e){ opt=undefined; }
+    var p; try{ p=createImageBitmap(file, opt); }catch(e){ p=null; }
+    if(p && p.then){
+      p.then(function(bmp){
+        draw(bmp.width, bmp.height, function(ctx,w,h){ ctx.drawImage(bmp,0,0,w,h); try{bmp.close&&bmp.close();}catch(e){} });
+      }).catch(function(){ fallbackImg(); });
+      return;
+    }
+  }
+  fallbackImg();
+  function fallbackImg(){
+    var rd=new FileReader();
+    rd.onerror=function(){ cb(null,'read'); };
+    rd.onload=function(e){
+      var im=new Image();
+      im.onload=function(){ draw(im.width, im.height, function(ctx,w,h){ ctx.drawImage(im,0,0,w,h); }); };
+      im.onerror=function(){ cb(null,'decode'); };
+      im.src=e.target.result;
+    };
+    rd.readAsDataURL(file);
+  }
+}
+function imgErrMsg(reason){
+  if(reason==='decode'||reason==='draw'){ return '\u1ea2nh kh\u00f4ng \u0111\u1ecdc \u0111\u01b0\u1ee3c (c\u00f3 th\u1ec3 l\u00e0 \u0111\u1ecbnh d\u1ea1ng HEIC c\u1ee7a iPhone). H\u00e3y v\u00e0o C\u00e0i \u0111\u1eb7t > Camera > \u0110\u1ecbnh d\u1ea1ng > "T\u01b0\u01a1ng th\u00edch nh\u1ea5t" (JPEG) r\u1ed3i ch\u1ee5p l\u1ea1i, ho\u1eb7c ch\u1ecdn \u1ea3nh d\u1ea1ng JPG/PNG.'; }
+  return '\u1ea2nh l\u1ed7i, kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c.';
+}
+
 function attachImg(id,inp){
   var files = inp && inp.files ? Array.prototype.slice.call(inp.files) : [];
   if(!files.length) return;
@@ -537,23 +571,20 @@ function attachImg(id,inp){
   if(!Array.isArray(t.imgs)) t.imgs = t.img ? [t.img] : [];
   var MAX=5;
   var queue = files.slice(0, Math.max(0, MAX - t.imgs.length));
-  if(queue.length < files.length) toast('Tối đa '+MAX+' ảnh');
-  if(!queue.length){ inp.value=''; return; }
-  var done=0; var total=queue.length;
+  if(queue.length < files.length) toast('T\u1ed1i \u0111a '+MAX+' \u1ea3nh');
+  if(!queue.length){ if(inp) inp.value=''; return; }
+  var done=0, total=queue.length, added=0, failed=0;
   function finish(){ done++; if(done<total) return;
     delete t.img; t.updated=todayStr(0); save();
     (t.kind==='display'?openDisplay:openTask)(id); render(); queuePush(id);
-    toast('Đã đính '+t.imgs.length+' ảnh'); if(inp) inp.value=''; }
+    if(added) toast('\u0110\u00e3 \u0111\u00ednh '+t.imgs.length+' \u1ea3nh');
+    if(failed) toast(imgErrMsg('decode'));
+    if(inp) inp.value=''; }
   queue.forEach(function(file){
-    var rd=new FileReader();
-    rd.onload=function(e){var im=new Image();
-      im.onload=function(){var max=480;var w=im.width,h2=im.height;
-        if(w>h2&&w>max){h2=Math.round(h2*max/w);w=max;}else if(h2>=w&&h2>max){w=Math.round(w*max/h2);h2=max;}
-        var cv=document.createElement('canvas');cv.width=w;cv.height=h2;cv.getContext('2d').drawImage(im,0,0,w,h2);
-        var data;try{data=cv.toDataURL('image/jpeg',0.6);}catch(err){data=e.target.result;}
-        t.imgs.push(data); finish();};
-      im.onerror=function(){toast('Ảnh lỗi'); finish();};im.src=e.target.result;};
-    rd.readAsDataURL(file);
+    imgToJpegDataURL(file, 480, 0.6, function(data, reason){
+      if(data){ t.imgs.push(data); added++; } else { failed++; }
+      finish();
+    });
   });
 }
 function removeImg(id,idx){
