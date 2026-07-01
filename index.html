@@ -1501,6 +1501,63 @@ setInterval(function(){ try{ if(typeof pullShared==='function') pullShared(true)
 // Tai lan dau
 setTimeout(function(){ try{ pullShared(true); }catch(e){} }, 1500);
 
+/* === Sap xep card theo: uu tien (gap/ket) truoc, roi thoi gian cap nhat moi nhat === */
+// Gan m2c thoi gian cap nhat cho task moi khi bi sua (bang cach boc them queuePush)
+if(typeof queuePush==='function' && !queuePush.__tsStamp){
+  var __qpForTs = queuePush;
+  queuePush = function(id){
+    try{ if(typeof board!=='undefined' && board.tasks && board.tasks[id]){ board.tasks[id]._ts = Date.now(); } }catch(e){}
+    return __qpForTs.apply(this, arguments);
+  };
+  queuePush.__tsStamp = true;
+  queuePush.__wrapped = true;
+  window.queuePush = queuePush;
+}
+
+// Xep hang uu tien tu class cua card: urgent = 0, stuck = 1, thuong = 2
+function __cardTier(card){
+  if(card.classList.contains('urgent')) return 0;
+  if(card.classList.contains('stuck'))  return 1;
+  return 2;
+}
+// Lay m2c thoi gian _ts cua task tu data-id (khong co thi = 0 -> xuong cuoi)
+function __cardTs(card){
+  try{
+    var id = card.getAttribute('data-id');
+    if(id && typeof board!=='undefined' && board.tasks && board.tasks[id] && board.tasks[id]._ts){
+      return board.tasks[id]._ts;
+    }
+  }catch(e){}
+  return 0;
+}
+// Sap xep lai card trong tung cot: uu tien truoc, roi _ts giam dan (moi nhat len tren)
+function __applySort(){
+  try{
+    document.querySelectorAll('.colbody').forEach(function(body){
+      var cards = Array.prototype.slice.call(body.querySelectorAll(':scope > .card'));
+      if(cards.length<2) return;
+      cards.sort(function(x,y){
+        var tx=__cardTier(x), ty=__cardTier(y);
+        if(tx!==ty) return tx-ty;               // uu tien truoc
+        return __cardTs(y) - __cardTs(x);        // moi nhat len tren
+      });
+      cards.forEach(function(c){ body.appendChild(c); });
+    });
+  }catch(e){}
+}
+
+// Boc render() de tu dong sap xep lai sau moi lan ve board
+if(typeof render==='function' && !render.__sortWrapped){
+  var __origRender = render;
+  render = function(){
+    var r = __origRender.apply(this, arguments);
+    __applySort();
+    return r;
+  };
+  render.__sortWrapped = true;
+  window.render = render;
+}
+
 boot();
 </script>
 </body>
