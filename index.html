@@ -230,6 +230,9 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
     <button class="btn" onclick="pullShared()">🔄 Tải mới</button>
     <button class="btn" id="btnTunhap" onclick="openDraw('add')">✍ Tự nhập</button>
     <button class="btn" id="btnExcel" onclick="exportExcel()">📊 Excel</button>
+    <!-- Hiển thị tên tài khoản đang đăng nhập + nút Đăng xuất -->
+    <span id="whoami" style="font-weight:600;font-size:12px;color:var(--soft);margin-left:4px"></span>
+    <button class="btn sm" onclick="logout()">🚪 Đăng xuất</button>
     <button class="btn sm" onclick="openDraw('data')">⋯ Dữ liệu</button>
   </div>
 
@@ -1365,6 +1368,15 @@ function doLogin(){
 function logout(){try{localStorage.removeItem('posm_session');}catch(e){}location.reload();}
 function startApp(){const g=document.getElementById('loginGate');if(g)g.style.display='none';render();initShared();}
 function boot(){if(sessionUser()){startApp();}else{const g=document.getElementById('loginGate');if(g)g.style.display='flex';const u=document.getElementById('lgU');if(u)u.focus();}}
+// Hiển thị tên người dùng đang đăng nhập ra header
+function showWhoami(){
+  try{
+    var s = JSON.parse(localStorage.getItem('posm_session'));
+    var el = document.getElementById('whoami');
+    if(el && s && s.name){ el.textContent = '👤 ' + s.name; }
+  }catch(e){}
+}
+showWhoami();
 boot();
 </script>
 </body>
