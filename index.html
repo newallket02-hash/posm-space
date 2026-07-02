@@ -77,6 +77,39 @@ input.search:focus,select.f:focus{outline:none;border-color:var(--gold)}
 .card:active{cursor:grabbing}
 .card.urgent{border-left-color:var(--red)}
 /* Khung khoanh vùng đỏ khi nhảy từ thông báo tới card */
+
+/* ===== Nhan xet / Comment (them moi) ===== */
+.cmtWrap{margin-top:18px;border-top:1px solid var(--line);padding-top:12px}
+.cmtTitle{font-size:12px;font-weight:800;color:var(--soft);text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.cmtCntBadge{background:var(--gold-soft);color:var(--gold);border-radius:20px;padding:1px 9px;font-size:11px;font-weight:800}
+.cmtList{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}
+.cmtEmpty{font-size:12px;color:var(--muted);padding:8px 2px}
+.cmtItem{background:#fff;border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;margin-bottom:6px}
+.cmtHead{display:flex;align-items:baseline;gap:8px;font-size:12.5px}
+.cmtHead b{color:var(--ink)}
+.cmtTime{font-size:10.5px;color:var(--muted)}
+.cmtBody{font-size:13px;line-height:1.5;color:var(--ink);margin:3px 0 5px;white-space:normal;word-break:break-word}
+.cmtImg{max-width:100%;max-height:220px;border-radius:8px;border:1px solid var(--line);margin-top:4px;cursor:zoom-in;display:block}
+.cmtMention{background:var(--gold-soft);color:var(--gold);font-weight:700;border-radius:4px;padding:0 3px}
+.cmtActs{display:flex;gap:10px}
+.cmtAct{border:none;background:none;color:var(--muted);font:inherit;font-size:11px;font-weight:700;cursor:pointer;padding:0}
+.cmtAct:hover{color:var(--ink)}
+.cmtAct.del:hover{color:var(--red)}
+.cmtForm{position:relative}
+.cmtReplyTo{font-size:11.5px;color:var(--soft);background:var(--gold-soft);border-radius:6px;padding:4px 8px;margin-bottom:6px}
+.cmtInput{width:100%;font:inherit;font-size:13px;border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;background:#fff;min-height:52px;resize:vertical}
+.cmtInput:focus{outline:none;border-color:var(--gold)}
+.cmtBar{display:flex;align-items:center;gap:8px;margin-top:6px}
+.cmtEmojiBtn{font-size:11.5px;font-weight:700;color:var(--soft);cursor:pointer;border:1px solid var(--line);border-radius:20px;padding:4px 10px}
+.cmtEmojiBtn:hover{border-color:var(--gold);color:var(--gold)}
+.cmtEmojiBox{position:absolute;bottom:42px;left:0;background:#fff;border:1px solid var(--line);border-radius:var(--r-sm);padding:6px;display:flex;flex-wrap:wrap;gap:4px;max-width:260px;box-shadow:0 6px 18px rgba(0,0,0,.12);z-index:5}
+.cmtEmojiItem{font-size:18px;cursor:pointer;padding:2px 4px;border-radius:6px}
+.cmtEmojiItem:hover{background:var(--gold-soft)}
+.cmtMenu{position:absolute;background:#fff;border:1px solid var(--line);border-radius:var(--r-sm);box-shadow:0 6px 18px rgba(0,0,0,.12);z-index:6;max-height:160px;overflow:auto;min-width:150px}
+.cmtMi{padding:6px 10px;font-size:12.5px;cursor:pointer}
+.cmtMi:hover{background:var(--gold-soft)}
+.cmtBadge{font-size:10.5px;font-weight:700;color:var(--soft);display:inline-flex;align-items:center;gap:3px}
+
 .card.notif-target{position:relative;animation:notifPulse 1s ease-in-out 0s 2;box-shadow:0 0 0 3px var(--red),0 6px 18px rgba(0,0,0,.18)!important;border-color:var(--red)!important}
 tr.notif-target{animation:notifPulse 1s ease-in-out 0s 2}
 tr.notif-target>td{border-top:2px solid var(--red)!important;border-bottom:2px solid var(--red)!important;background:var(--red-soft)!important}
@@ -479,6 +512,7 @@ function cardHTML(t){
     <div class="nm">${esc(t.name)||'(chưa có tên SP)'}</div>
     <div class="mt"><span class="brtag" style="${brCss(t.branch)}">${esc(t.branch)||'—'}</span><span>${esc(t.pdx)||'—'}</span>${gap}${dlp}${demo}</div>
     ${t.updated?`<div class="upd">cập nhật ${fmtVN(t.updated)}</div>`:''}
+    ${cmtCount(t)?`<div class="cmtBadge">💬 ${cmtCount(t)}</div>`:''}
     ${(imgList(t)[0])?`<img class="cimg" src="${imgList(t)[0]}" onclick="event.stopPropagation();zoomImg(this.src)">`:''}
     <div class="arrows" onclick="event.stopPropagation()">
       <button class="arrow" ${i<=0?'disabled':''} onclick="move('${t.taskId}',-1)">◀</button>
@@ -726,6 +760,7 @@ function openTask(id){
       <button class="flagbtn" onclick="setCol('${id}','done');toast('Đã chuyển sang Xong')">✓ Đánh dấu Xong</button>
     </div>
     <button class="flagbtn" id="delBtn" style="width:100%;margin-top:10px;border-color:#f0c2bd;color:var(--red)" onclick="delTask('${id}')">🗑 Xóa task này (không hoạt động nữa)</button>`;
+  mountComments(id);
   openScrim();
 }
 
@@ -1526,6 +1561,7 @@ function openDisplay(id){
     '<div class="divider"></div>'+
     '<button class="flagbtn" style="width:100%" onclick="markChanged(\''+id+'\')">✅ Đã đổi xong (xoá hạn)</button>'+
     '<button class="flagbtn" id="delBtn" style="width:100%;margin-top:10px;border-color:#f0c2bd;color:var(--red)" onclick="delDisplay(\''+id+'\')">🗑 Xóa mục này</button>';
+  mountComments(id);
   openScrim();}
 function markChanged(id){const t=store.tasks[id];if(!t)return;t.expire='';t.updated=todayStr(0);save();queuePush(id);openDisplay(id);renderDisplays();toast('Đã đánh dấu đã đổi (xoá hạn)');}
 function delDisplay(id){const b=document.getElementById('delBtn');if(!b)return;if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='Bấm lần nữa để xóa hẳn';return;}pushDelete(id);delete store.tasks[id];save();closeDraw();renderDisplays();toast('Đã xóa mục');}
@@ -1808,6 +1844,155 @@ function clearNotifUnread(){
 }
 
 // Nhảy thẳng tới card của thay đổi, khoanh vùng đỏ 3 giây rồi ẩn
+
+/* ===== Nhan xet / Comment tren task (them moi) ===== */
+function __cmtUser(){ try{ var s=JSON.parse(localStorage.getItem('posm_session')); return (s&&s.name)?s.name:'Ai do'; }catch(e){ return 'Ai do'; } }
+function cmtCount(t){ try{ return (t&&Array.isArray(t.comments))?t.comments.length:0; }catch(e){ return 0; } }
+function __cmtTime(ts){ try{ var d=new Date(ts); var p=n=>('0'+n).slice(-2); return p(d.getDate())+'/'+p(d.getMonth()+1)+' '+p(d.getHours())+':'+p(d.getMinutes()); }catch(e){ return ''; } }
+function __cmtLinkify(s){
+  var esc=__esc(s||'');
+  esc=esc.replace(/@([A-Za-zÀ-ỹ0-9]+(?:\s[A-Za-zÀ-ỹ0-9]+)?)/g,function(m){ return '<span class="cmtMention">'+m+'</span>'; });
+  esc=esc.replace(/(https?:\/\/[^\s<]+)/g,function(u){
+    if(/\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(u)) return '<br><img class="cmtImg" src="'+u+'" onclick="window.open(this.src,\'_blank\')">';
+    return '<a href="'+u+'" target="_blank" rel="noopener">'+u+'</a>';
+  });
+  return esc.replace(/\n/g,'<br>');
+}
+function __cmtNode(id, c, depth){
+  var me=__cmtUser();
+  var mine=(c.by===me);
+  var pad=Math.min(depth,4)*18;
+  var acts='<button class="cmtAct" onclick="cmtReply(\''+id+'\',\''+c.cid+'\')">Tra loi</button>';
+  if(mine){ acts+='<button class="cmtAct" onclick="cmtEdit(\''+id+'\',\''+c.cid+'\')">Sua</button><button class="cmtAct del" onclick="cmtDel(\''+id+'\',\''+c.cid+'\')">Xoa</button>'; }
+  var edited=c.edited?' <i style="color:var(--muted)">(da sua)</i>':'';
+  var html='<div class="cmtItem" style="margin-left:'+pad+'px" data-cid="'+c.cid+'">'
+    +'<div class="cmtHead"><b>'+__esc(c.by)+'</b><span class="cmtTime">'+__cmtTime(c.at)+edited+'</span></div>'
+    +'<div class="cmtBody">'+__cmtLinkify(c.text)+'</div>'
+    +'<div class="cmtActs">'+acts+'</div></div>';
+  return html;
+}
+function __cmtTree(id){
+  var t=store.tasks[id]; if(!t||!Array.isArray(t.comments)) return '<div class="cmtEmpty">Chua co nhan xet nao.</div>';
+  var byParent={}; t.comments.forEach(function(c){ var p=c.parent||''; (byParent[p]=byParent[p]||[]).push(c); });
+  var out='';
+  (function walk(parent,depth){
+    var arr=byParent[parent]||[]; arr.sort(function(a,b){return (a.at||0)-(b.at||0);});
+    arr.forEach(function(c){ out+=__cmtNode(id,c,depth); walk(c.cid,depth+1); });
+  })('',0);
+  return out||'<div class="cmtEmpty">Chua co nhan xet nao.</div>';
+}
+function renderComments(id){
+  var box=document.getElementById('cmtBox'); if(!box) return;
+  box.innerHTML='<div class="cmtList">'+__cmtTree(id)+'</div>';
+}
+function mountComments(id){
+  var b=document.getElementById('drawBody'); if(!b) return;
+  var wrap=document.createElement('div'); wrap.className='cmtWrap';
+  wrap.innerHTML=''
+    +'<div class="cmtTitle">Nhan xet <span id="cmtCnt" class="cmtCntBadge">'+cmtCount(store.tasks[id])+'</span></div>'
+    +'<div id="cmtBox"></div>'
+    +'<div class="cmtForm">'
+    +'<div id="cmtReplyTo" class="cmtReplyTo" style="display:none"></div>'
+    +'<textarea id="cmtInput" class="cmtInput" placeholder="Viet nhan xet... (@ de nhac ten, dan link anh de gan hinh)" data-tid="'+id+'"></textarea>'
+    +'<div id="cmtMenu" class="cmtMenu" style="display:none"></div>'
+    +'<div class="cmtBar"><span id="cmtEmoji" class="cmtEmojiBtn">Emoji</span>'
+    +'<div id="cmtEmojiBox" class="cmtEmojiBox" style="display:none"></div>'
+    +'<span style="flex:1"></span>'
+    +'<button class="btn sm" onclick="cmtCancelReply()" id="cmtCancelBtn" style="display:none">Huy</button>'
+    +'<button class="btn primary sm" onclick="cmtSend(\''+id+'\')">Gui</button></div>'
+    +'</div>';
+  b.appendChild(wrap);
+  renderComments(id);
+  var ta=document.getElementById('cmtInput');
+  if(ta){ ta.addEventListener('input',function(){ cmtOnType(this); }); ta.addEventListener('keydown',function(e){ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); cmtSend(id); } }); }
+  var eb=document.getElementById('cmtEmoji'); if(eb){ eb.onclick=function(){ cmtToggleEmoji(); }; }
+}
+window.__cmtReplyState={id:null,parent:null,edit:null};
+function cmtReply(id,cid){
+  __cmtReplyState={id:id,parent:cid,edit:null};
+  var c=(store.tasks[id].comments||[]).find(function(x){return x.cid===cid;});
+  var box=document.getElementById('cmtReplyTo');
+  if(box){ box.style.display='block'; box.innerHTML='Dang tra loi <b>'+__esc(c?c.by:'')+'</b>'; }
+  document.getElementById('cmtCancelBtn').style.display='';
+  document.getElementById('cmtInput').focus();
+}
+function cmtCancelReply(){
+  __cmtReplyState={id:null,parent:null,edit:null};
+  var box=document.getElementById('cmtReplyTo'); if(box){ box.style.display='none'; box.innerHTML=''; }
+  var cb=document.getElementById('cmtCancelBtn'); if(cb) cb.style.display='none';
+  var ta=document.getElementById('cmtInput'); if(ta){ ta.value=''; }
+}
+function cmtEdit(id,cid){
+  var c=(store.tasks[id].comments||[]).find(function(x){return x.cid===cid;});
+  if(!c||c.by!==__cmtUser()){ toast('Chi sua duoc nhan xet cua minh'); return; }
+  __cmtReplyState={id:id,parent:null,edit:cid};
+  var ta=document.getElementById('cmtInput'); ta.value=c.text; ta.focus();
+  var box=document.getElementById('cmtReplyTo'); if(box){ box.style.display='block'; box.innerHTML='Dang sua nhan xet cua ban'; }
+  document.getElementById('cmtCancelBtn').style.display='';
+}
+function cmtDel(id,cid){
+  var t=store.tasks[id]; if(!t||!Array.isArray(t.comments)) return;
+  var c=t.comments.find(function(x){return x.cid===cid;});
+  if(!c||c.by!==__cmtUser()){ toast('Chi xoa duoc nhan xet cua minh'); return; }
+  if(!confirm('Xoa nhan xet nay?')) return;
+  var rm={}; rm[cid]=1; var changed=true;
+  while(changed){ changed=false; t.comments.forEach(function(x){ if(x.parent&&rm[x.parent]&&!rm[x.cid]){ rm[x.cid]=1; changed=true; } }); }
+  t.comments=t.comments.filter(function(x){ return !rm[x.cid]; });
+  t.updated=todayStr(0); save(); queuePush(id);
+  renderComments(id); var cc=document.getElementById('cmtCnt'); if(cc) cc.textContent=cmtCount(t);
+}
+function cmtSend(id){
+  var ta=document.getElementById('cmtInput'); if(!ta) return;
+  var txt=(ta.value||'').trim(); if(!txt){ return; }
+  var t=store.tasks[id]; if(!t) return;
+  if(!Array.isArray(t.comments)) t.comments=[];
+  var st=__cmtReplyState||{};
+  if(st.edit){
+    var c=t.comments.find(function(x){return x.cid===st.edit;});
+    if(c&&c.by===__cmtUser()){ c.text=txt; c.edited=true; c.at2=Date.now(); }
+  } else {
+    t.comments.push({ cid:'c'+Date.now()+Math.random().toString(36).slice(2,6), by:__cmtUser(), text:txt, at:Date.now(), parent:(st.parent||'') });
+  }
+  t.updated=todayStr(0); save(); queuePush(id);
+  cmtCancelReply();
+  renderComments(id);
+  var cc=document.getElementById('cmtCnt'); if(cc) cc.textContent=cmtCount(t);
+}
+function cmtOnType(ta){
+  var v=ta.value, pos=ta.selectionStart||v.length;
+  var upto=v.slice(0,pos); var m=upto.match(/@([A-Za-zÀ-ỹ0-9]*)$/);
+  var menu=document.getElementById('cmtMenu'); if(!menu) return;
+  if(!m){ menu.style.display='none'; return; }
+  var q=(m[1]||'').toLowerCase();
+  var names=(typeof ACCOUNTS!=='undefined'?ACCOUNTS.map(function(a){return a.name;}):[]);
+  var hit=names.filter(function(n){ return n.toLowerCase().indexOf(q)>=0; });
+  if(!hit.length){ menu.style.display='none'; return; }
+  menu.innerHTML=hit.map(function(n){ return '<div class="cmtMi" onclick="cmtPickMention(\''+n.replace(/'/g,"\\'")+'\')">@'+__esc(n)+'</div>'; }).join('');
+  menu.style.display='block';
+}
+function cmtPickMention(name){
+  var ta=document.getElementById('cmtInput'); if(!ta) return;
+  var v=ta.value, pos=ta.selectionStart||v.length;
+  var before=v.slice(0,pos).replace(/@([A-Za-zÀ-ỹ0-9]*)$/,'@'+name+' ');
+  ta.value=before+v.slice(pos);
+  document.getElementById('cmtMenu').style.display='none';
+  ta.focus();
+}
+function cmtToggleEmoji(){
+  var box=document.getElementById('cmtEmojiBox'); if(!box) return;
+  if(box.style.display==='none'){
+    var es=['👍','❤️','😀','😂','😮','😢','🎉','🔥','✅','❌','⚠️','🙏','👏','💡','📌','🚀'];
+    box.innerHTML=es.map(function(e){ return '<span class="cmtEmojiItem" onclick="cmtAddEmoji(\''+e+'\')">'+e+'</span>'; }).join('');
+    box.style.display='flex';
+  } else { box.style.display='none'; }
+}
+function cmtAddEmoji(e){
+  var ta=document.getElementById('cmtInput'); if(!ta) return;
+  var pos=ta.selectionStart||ta.value.length;
+  ta.value=ta.value.slice(0,pos)+e+ta.value.slice(pos);
+  ta.focus(); document.getElementById('cmtEmojiBox').style.display='none';
+}
+
 var __notifTimer = null;
 function gotoTask(id){
   if(!id) return;
