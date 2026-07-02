@@ -424,7 +424,7 @@ function render(){
     `<button class="pill red ${filter.tag==='urgent'?'on':''}" onclick="setTag('urgent')">🔴 Gấp <span class="n">${urg.length}</span></button>`+
     `<button class="pill red ${filter.tag==='over'?'on':''}" onclick="setTag('over')">⏰ Trễ <span class="n">${over.length}</span></button>`+
     `<button class="pill amber ${filter.tag==='stuck'?'on':''}" onclick="setTag('stuck')">⚠️ Kẹt <span class="n">${stk.length}</span></button>`+
-    `<select class="f" onchange="filter.branch=this.value;render()"><option value="">Tất cả chi nhánh</option>`+
+    `<span style="width:1px;height:22px;background:var(--line);margin:0 2px"></span>`+`<button class="pill ${filter.branch===''?'on':''}" onclick="setBranch('')">Tất cả CN</button>`+['Quận 2','Quận 1','Quận 7','Đà Nẵng','Thủ Đức'].map(b=>`<button class="pill ${filter.branch===b?'on':''}" onclick="setBranch('${b}')">${b}</button>`).join('')+`<select class="f" onchange="filter.branch=this.value;render()"><option value="">Tất cả chi nhánh</option>`+
       [...new Set(A.map(t=>t.branch).filter(Boolean))].sort().map(b=>`<option ${filter.branch===b?'selected':''}>${b}</option>`).join('')+`</select>`;
   // board
   const board=document.getElementById('board');
@@ -487,6 +487,7 @@ function dOver(e,col){e.preventDefault();e.currentTarget.classList.add('drag');}
 function dLeave(e){e.currentTarget.classList.remove('drag');}
 function dDrop(e,col){e.preventDefault();e.currentTarget.classList.remove('drag');if(dragId){setCol(dragId,col);}dragId=null;}
 
+function setBranch(b){filter.branch=b;render();}
 function setTag(t){filter.tag=(filter.tag===t&&t!=='all')?'all':t;if(t==='promo')renderPromos();
   render();}
 function onSearch(v){filter.q=v;render();}
@@ -731,15 +732,10 @@ function openDraw(kind){
       <div class="divider"></div>
       <div class="hint">Cột <code>Tiến độ</code> trong Sheet sẽ tự xếp vào đúng khâu Kanban. Để trống thì giữ nguyên trạng thái chị đang chỉnh.</div>`;
   }else if(kind==='add'){
-    T.textContent='Tự nhập task';pending=[];
-    B.innerHTML=`<div class="hint"><b>Mỗi dòng = 1 task.</b> Gõ/dán danh sách rồi bấm <b>Thêm tất cả</b> — app KHÔNG tự đoán, giữ nguyên tên chị nhập. Chi nhánh/khâu có thể chỉnh sau trong từng thẻ.</div>
-    <textarea class="paste" id="addBox" placeholder="Mỗi dòng 1 task, ví dụ:
-Menu A4 Mr BBQ cho Q7
-Standee đổi KM tháng 7
-Decal phòng sauna
-Brochure cá Aqua Cafe"></textarea>
-    <div style="margin:10px 0;display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="addLinesDirect()">➕ Thêm tất cả</button><button class="btn" onclick="addBlank();renderPreview()">＋ Nhập tay 1 task</button><button class="btn" onclick="closeDraw()">Hủy</button></div>
+    T.textContent='Nhập task';pending=[];addBlank();
+    B.innerHTML=`<div class="hint">Nhập <b>đầy đủ thông tin</b> cho từng task. Bấm <b>＋ Thêm task</b> để nhập nhiều task cùng lúc, rồi bấm <b>Thêm tất cả vào board</b>.</div>
     <div id="addPreview"></div>`;
+    renderPreview();
   }else{
     T.textContent='Dữ liệu';const n=arr().length,d=arr().filter(x=>x.demo).length;
     B.innerHTML=`
@@ -969,16 +965,18 @@ function renderPreview(){
         <select onchange="pending[${i}].col=this.value">${colOpt(p)}</select>
         <select onchange="pending[${i}].prio=this.value">${prOpt(p)}</select>
       </div>
-      <div class="pg2">
+      <div class="pg3">
         <input placeholder="Người phụ trách" value="${e(p.requester)}" onchange="pending[${i}].requester=this.value">
         <input placeholder="Mã PĐX" value="${e(p.pdx)}" onchange="pending[${i}].pdx=this.value">
+        <input placeholder="Deadline (vd 28/6/2026)" value="${e(p.deadline)}" onchange="pending[${i}].deadline=this.value">
       </div>
       <textarea placeholder="Nội dung chi tiết" onchange="pending[${i}].detail=this.value">${e(p.detail)}</textarea>
+      <textarea placeholder="Ghi chú" onchange="pending[${i}].note=this.value">${e(p.note||'')}</textarea>
       <button class="rm" onclick="pending.splice(${i},1);renderPreview()">✕ Bỏ task này</button>
     </div>`).join('')+
     `<div style="display:flex;gap:8px;margin-top:8px"><button class="btn" onclick="addBlank()">＋ Thêm dòng</button><button class="btn primary" style="flex:1" onclick="commitAdd()">➕ Thêm ${pending.length} task vào board</button></div>`;
 }
-function addBlank(){pending.push({name:'',detail:'',branch:'Không rõ',prio:'—',col:'intake',pdx:'',requester:'',proposed:'',deadline:''});renderPreview();}
+function addBlank(){pending.push({name:'',detail:'',branch:'Không rõ',prio:'—',col:'intake',pdx:'',requester:'',proposed:'',deadline:'',note:''});renderPreview();}
 function nextManualNum(){let mx=0;arr().forEach(t=>{const m=/^M(\d+)$/.exec(t.taskId);if(m)mx=Math.max(mx,+m[1]);});return mx+1;}
 function commitAdd(){
   if(!pending.length)return toast('Chưa có task');
@@ -986,7 +984,7 @@ function commitAdd(){
   pending.forEach((p,i)=>{const id='M'+String(base+i).padStart(2,'0');
     store.tasks[id]={taskId:id,pdx:p.pdx||'',pdxLink:'',requester:p.requester||'',branch:p.branch||'Không rõ',
       name:p.name||'(task mới)',detail:p.detail||'',size:'',purpose:'',proposed:p.proposed||'',deadline:p.deadline||'',
-      prio:p.prio||'—',col:p.col||'intake',note:'',updated:todayStr(0),stuck:false,demo:false};});
+      prio:p.prio||'—',col:p.col||'intake',note:p.note||'',updated:todayStr(0),stuck:false,demo:false};});
   Object.keys(store.tasks).filter(k=>/^M\d+$/.test(k)).forEach(()=>{});
   const newIds=[];for(let i=0;i<n;i++){newIds.push('M'+String(base+i).padStart(2,'0'));}
   pending=[];save();render();closeDraw();newIds.forEach(queuePush);toast('Đã thêm '+n+' task');
