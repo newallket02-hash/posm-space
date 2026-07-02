@@ -76,6 +76,11 @@ input.search:focus,select.f:focus{outline:none;border-color:var(--gold)}
 .card:hover{box-shadow:0 3px 10px rgba(0,0,0,.07);transform:translateY(-1px)}
 .card:active{cursor:grabbing}
 .card.urgent{border-left-color:var(--red)}
+/* Khung khoanh vùng đỏ khi nhảy từ thông báo tới card */
+.card.notif-target{position:relative;animation:notifPulse 1s ease-in-out 0s 2;box-shadow:0 0 0 3px var(--red),0 6px 18px rgba(0,0,0,.18)!important;border-color:var(--red)!important}
+@keyframes notifPulse{0%,100%{box-shadow:0 0 0 3px var(--red),0 6px 18px rgba(0,0,0,.18)}50%{box-shadow:0 0 0 6px rgba(214,64,64,.35),0 6px 18px rgba(0,0,0,.18)}}
+.notifItem{cursor:pointer;transition:background .1s}
+.notifItem:hover{background:var(--gold-soft)}
 .card.stuck{border-left-color:var(--amber)}
 .card .nm{font-weight:700;font-size:13px;line-height:1.3;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .card .mt{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
@@ -466,7 +471,7 @@ function cardHTML(t){
   const cls=isUrgent(t)?'urgent':(isStuck(t)?'stuck':'');
   const i=COL_IDS.indexOf(t.col);
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-  return `<div class="card ${cls}" draggable="true" ondragstart="dStart(event,'${t.taskId}')" ondragend="dEnd()" onclick="openTask('${t.taskId}')">
+  return `<div class="card ${cls}" data-id="${t.taskId}" draggable="true" ondragstart="dStart(event,'${t.taskId}')" ondragend="dEnd()" onclick="openTask('${t.taskId}')">
     <div class="nm">${esc(t.name)||'(chưa có tên SP)'}</div>
     <div class="mt"><span class="brtag" style="${brCss(t.branch)}">${esc(t.branch)||'—'}</span><span>${esc(t.pdx)||'—'}</span>${gap}${dlp}${demo}</div>
     ${t.updated?`<div class="upd">cập nhật ${fmtVN(t.updated)}</div>`:''}
@@ -1710,7 +1715,7 @@ showWhoami();
 /* === Thanh thong bao: ghi + hien thi lich su chinh sua ID === */
 var __activity = [];        // nhat ky lay tu server
 var __pendingActs = [];     // cac ban ghi cho gui len server
-var __notifSeen = parseInt(localStorage.getItem('posm_notif_seen')||'0',10);
+var __notifSeen = (function(){var v=localStorage.getItem('posm_notif_seen'); if(v===null){ v=String(Date.now()); localStorage.setItem('posm_notif_seen', v); } return parseInt(v||'0',10);})();
 
 function __curUser(){
   try{ var s=JSON.parse(localStorage.getItem('posm_session')); return (s&&s.name)?s.name:'Ai đó'; }catch(e){ return 'Ai đó'; }
@@ -1741,12 +1746,15 @@ if(typeof queuePush==='function' && !queuePush.__wrapped){
 }
 
 // Gan cac ban ghi cho vao moi lan POST co upsert
-if(typeof apiPost==='function' && !apiPost.__wrapped){
+if(typeof apiPost === 'function' && !apiPost.__wrapped){
   var __origApiPost = apiPost;
   apiPost = function(p){
     try{
-      if(p && p.upsert && p.upsert.length && __pendingActs.length){
-        p.activity = __pendingActs.slice(); __pendingActs = [];
+      // Gắn nhật ký vào BẤT KỲ post nào khi đang có bản ghi chờ (kể cả xoá),
+      // để thông báo không bao giờ bị rớt.
+      if(p && __pendingActs.length){
+        p.activity = (p.activity||[]).concat(__pendingActs.slice());
+        __pendingActs = [];
       }
     }catch(e){}
     return __origApiPost.apply(this, arguments);
@@ -1778,10 +1786,10 @@ function renderNotif(){
   if(!acts.length){ list.innerHTML='<div class="notifEmpty">Chưa có hoạt động nào</div>'; }
   else{
     list.innerHTML = acts.map(function(a){
-      return '<div class="notifItem"><b>'+__esc(a.by)+'</b> vừa cập nhật <b>'+__esc(a.name||a.id)+'</b><div class="t">'+__relTime(a.at)+'</div></div>';
+      return '<div class="notifItem" data-goto="'+__esc(a.id)+'" title="Bấm để tới thay đổi này"><b>'+__esc(a.by)+'</b> vừa cập nhật <b>'+__esc(a.name||a.id)+'</b><div class="t">'+__relTime(a.at)+'</div></div>';
     }).join('');
   }
-  var unseen = acts.filter(function(a){return (a.at||0)>__notifSeen;}).length;
+  var unseen = acts.filter(function(a){return (a.at||0)>__notifSeen && a.by!==__curUser();}).length;
   if(badge){ badge.textContent = unseen>9?'9+':String(unseen); badge.classList.toggle('on', unseen>0); }
 }
 function toggleNotif(){
@@ -1794,10 +1802,42 @@ function clearNotifUnread(){
   localStorage.setItem('posm_notif_seen', String(__notifSeen));
   renderNotif();
 }
+
+// Nhảy thẳng tới card của thay đổi, khoanh vùng đỏ 3 giây rồi ẩn
+var __notifTimer = null;
+function gotoTask(id){
+  if(!id) return;
+  // đóng panel thông báo
+  var p = document.getElementById('notifPanel'); if(p) p.classList.remove('on');
+  // đánh dấu đã đọc để badge không còn nhấp nháy
+  try{ clearNotifUnread(); }catch(e){}
+  // tìm card theo data-id (thử vài lần vì board có thể đang render lại)
+  var tries = 0;
+  (function find(){
+    var card = document.querySelector('.card[data-id="'+ (window.CSS && CSS.escape ? CSS.escape(id) : id) +'"]');
+    if(!card && tries < 20){ tries++; return setTimeout(find, 150); }
+    if(!card){ if(typeof toast==='function') toast('Không tìm thấy thay đổi này trên bảng'); return; }
+    // cuộn tới giữa màn hình
+    card.scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
+    // gỡ highlight cũ (nếu có) rồi bật highlight mới
+    document.querySelectorAll('.card.notif-target').forEach(function(c){ c.classList.remove('notif-target'); });
+    if(__notifTimer){ clearTimeout(__notifTimer); }
+    card.classList.add('notif-target');
+    __notifTimer = setTimeout(function(){ card.classList.remove('notif-target'); __notifTimer = null; }, 3000);
+  })();
+}
+window.gotoTask = gotoTask;
 // Dong panel khi bam ra ngoai
 document.addEventListener('click', function(ev){
-  var w=ev.target.closest && ev.target.closest('.notifWrap');
-  if(!w){ var p=document.getElementById('notifPanel'); if(p) p.classList.remove('on'); }
+  // Bấm vào một mục thông báo -> nhảy tới thay đổi đó
+  var item = ev.target.closest && ev.target.closest('.notifItem');
+  if(item && item.getAttribute('data-goto')){
+    ev.preventDefault(); ev.stopPropagation();
+    gotoTask(item.getAttribute('data-goto'));
+    return;
+  }
+  var w = ev.target.closest && ev.target.closest('.notifWrap');
+  if(!w){ var p = document.getElementById('notifPanel'); if(p) p.classList.remove('on'); }
 });
 // Cap nhat thoi gian tuong doi moi 30s
 setInterval(function(){ var p=document.getElementById('notifPanel'); if(p&&p.classList.contains('on')) renderNotif(); }, 30000);
