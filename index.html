@@ -732,14 +732,14 @@ function openDraw(kind){
       <div class="hint">Cột <code>Tiến độ</code> trong Sheet sẽ tự xếp vào đúng khâu Kanban. Để trống thì giữ nguyên trạng thái chị đang chỉnh.</div>`;
   }else if(kind==='add'){
     T.textContent='Tự nhập task';pending=[];
-    B.innerHTML=`<div class="hint">Gõ/dán nội dung theo ý chị. <b>Mỗi dòng = 1 task</b> (hoặc mỗi đoạn cách nhau bằng dòng trống = 1 task nếu task nhiều dòng). App tự đoán <b>chi nhánh · ưu tiên · khâu · mã PDX · người</b> rồi cho chị sửa trước khi thêm.</div>
-      <textarea class="paste" id="addBox" placeholder="Ví dụ — gõ tự nhiên:
-Menu A4 Mr BBQ cho Q7, gấp, 3 ngôn ngữ
-Standee đổi KM tháng 7 Q2 PDX096
-Decal phòng sauna Q2, Ms Thủy, chờ duyệt
-Brochure cá Aqua Cafe Q2 đang làm"></textarea>
-      <div style="margin:10px 0;display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="parseAdd()">⚙ Phân loại</button><button class="btn" onclick="addBlank()">＋ Nhập tay 1 task</button><button class="btn" onclick="closeDraw()">Hủy</button></div>
-      <div id="addPreview"></div>`;
+    B.innerHTML=`<div class="hint"><b>Mỗi dòng = 1 task.</b> Gõ/dán danh sách rồi bấm <b>Thêm tất cả</b> — app KHÔNG tự đoán, giữ nguyên tên chị nhập. Chi nhánh/khâu có thể chỉnh sau trong từng thẻ.</div>
+    <textarea class="paste" id="addBox" placeholder="Mỗi dòng 1 task, ví dụ:
+Menu A4 Mr BBQ cho Q7
+Standee đổi KM tháng 7
+Decal phòng sauna
+Brochure cá Aqua Cafe"></textarea>
+    <div style="margin:10px 0;display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="addLinesDirect()">➕ Thêm tất cả</button><button class="btn" onclick="addBlank();renderPreview()">＋ Nhập tay 1 task</button><button class="btn" onclick="closeDraw()">Hủy</button></div>
+    <div id="addPreview"></div>`;
   }else{
     T.textContent='Dữ liệu';const n=arr().length,d=arr().filter(x=>x.demo).length;
     B.innerHTML=`
@@ -929,6 +929,23 @@ function classify(block){
   return {name:(first||'(task mới)').slice(0,100),detail:text,branch:detectBranch(text),
     prio:detectPrio(text),col:detectCol(text),
     pdx:pdxM?('PDX'+pdxM[1].padStart(3,'0')):'',requester:detectPerson(text),proposed:'',deadline:''};
+}
+function addLinesDirect(){
+  const raw=(document.getElementById('addBox').value||'').trim();
+  if(!raw)return toast('Chưa có nội dung');
+  const lines=raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  if(!lines.length)return toast('Chưa có dòng nào');
+  const base=nextManualNum();
+  const newIds=[];
+  lines.forEach((line,i)=>{
+    const id='M'+String(base+i).padStart(2,'0');
+    store.tasks[id]={taskId:id,pdx:'',pdxLink:'',requester:'',branch:'Không rõ',
+      name:line.slice(0,120),detail:'',size:'',purpose:'',proposed:'',deadline:'',
+      prio:'—',col:'intake',note:'',updated:todayStr(0),stuck:false,demo:false};
+    newIds.push(id);
+  });
+  pending=[];save();render();closeDraw();newIds.forEach(queuePush);
+  toast('Đã thêm '+lines.length+' task');
 }
 function parseAdd(){
   const raw=(document.getElementById('addBox').value||'').trim();
