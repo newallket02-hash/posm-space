@@ -78,6 +78,10 @@ input.search:focus,select.f:focus{outline:none;border-color:var(--gold)}
 .card.urgent{border-left-color:var(--red)}
 /* Khung khoanh vùng đỏ khi nhảy từ thông báo tới card */
 .card.notif-target{position:relative;animation:notifPulse 1s ease-in-out 0s 2;box-shadow:0 0 0 3px var(--red),0 6px 18px rgba(0,0,0,.18)!important;border-color:var(--red)!important}
+tr.notif-target{animation:notifPulse 1s ease-in-out 0s 2}
+tr.notif-target>td{border-top:2px solid var(--red)!important;border-bottom:2px solid var(--red)!important;background:var(--red-soft)!important}
+tr.notif-target>td:first-child{border-left:2px solid var(--red)!important}
+tr.notif-target>td:last-child{border-right:2px solid var(--red)!important}
 @keyframes notifPulse{0%,100%{box-shadow:0 0 0 3px var(--red),0 6px 18px rgba(0,0,0,.18)}50%{box-shadow:0 0 0 6px rgba(214,64,64,.35),0 6px 18px rgba(0,0,0,.18)}}
 .notifItem{cursor:pointer;transition:background .1s}
 .notifItem:hover{background:var(--gold-soft)}
@@ -1405,7 +1409,7 @@ function dTableHTML(arr){
       var ty=(t.dtype||'').toLowerCase();
       var pill=t.expire&&st.pill?'<span class="pillsm '+st.pill+'">'+e(st.label)+'</span>':'<span style="color:#c3bdb0">\u2014</span>';
       var fa=[t.floor?('T\u1ea7ng '+e(t.floor)):'', e(a)].filter(Boolean).join(' \u00b7 ');
-      return '<tr class="'+(empty?'empty':'')+'" onclick="openDisplay(\''+t.taskId+'\')">'+
+      return '<tr class="drow '+(empty?'empty':'')+'" data-id="'+t.taskId+'" onclick="openDisplay(\''+t.taskId+'\')">'+
         '<td>'+(e(t.spot)||'<i style="color:#bbb">(ch\u01b0a \u0111\u1eb7t t\u00ean)</i>')+'</td>'+
         '<td><span class="tytag ty-'+ty+'">'+(e(t.dtype)||'\u2014')+'</span></td>'+
         '<td>'+fa+'</td>'+
@@ -1814,7 +1818,7 @@ function gotoTask(id){
   // tìm card theo data-id (thử vài lần vì board có thể đang render lại)
   var tries = 0;
   (function find(){
-    var card = document.querySelector('.card[data-id="'+ (window.CSS && CSS.escape ? CSS.escape(id) : id) +'"]');
+    var _eid = (window.CSS && CSS.escape ? CSS.escape(id) : id); var card = document.querySelector('.card[data-id="'+ _eid +'"], tr[data-id="'+ _eid +'"]');
     if(!card && tries < 20){ tries++; return setTimeout(find, 150); }
     if(!card){ if(typeof toast==='function') toast('Không tìm thấy thay đổi này trên bảng'); return; }
     // cuộn tới giữa màn hình
