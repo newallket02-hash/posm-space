@@ -1811,6 +1811,14 @@ function clearNotifUnread(){
 var __notifTimer = null;
 function gotoTask(id){
   if(!id) return;
+  // Tu chuyen sang dung view (POSM / Standee-Tentcard-TV / Promo / Bang) chua task truoc khi cuon toi
+  try{
+    var _tk = (typeof store!=='undefined' && store.tasks) ? store.tasks[id] : null;
+    if(_tk && typeof switchView==='function'){
+      var _want = (_tk.kind==='display') ? 'display' : (_tk.kind==='promo' ? 'promo' : 'posm');
+      if(typeof view==='undefined' || view!==_want){ switchView(_want); }
+    }
+  }catch(e){}
   // đóng panel thông báo
   var p = document.getElementById('notifPanel'); if(p) p.classList.remove('on');
   // đánh dấu đã đọc để badge không còn nhấp nháy
