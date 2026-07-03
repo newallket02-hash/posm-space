@@ -118,6 +118,10 @@ tr.notif-target>td:last-child{border-right:2px solid var(--red)!important}
 @keyframes notifPulse{0%,100%{box-shadow:0 0 0 3px var(--red),0 6px 18px rgba(0,0,0,.18)}50%{box-shadow:0 0 0 6px rgba(214,64,64,.35),0 6px 18px rgba(0,0,0,.18)}}
 .notifItem{cursor:pointer;transition:background .1s}
 .notifItem:hover{background:var(--gold-soft)}
+.notifItem.notifMention{background:var(--gold-soft);border-left:3px solid var(--gold)}
+.notifItem.notifMention:hover{background:var(--gold-soft);filter:brightness(.97)}
+.cmtItem.notif-target{border-radius:8px;animation:notifPulse 1s ease-in-out 0s 2;box-shadow:0 0 0 3px var(--gold),0 4px 12px rgba(0,0,0,.15);padding:4px}
+#btnEditNick{cursor:pointer}
 .card.stuck{border-left-color:var(--amber)}
 .card .nm{font-weight:700;font-size:13px;line-height:1.3;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .card .mt{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
@@ -300,7 +304,7 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
         <div id="notifList"><div class="notifEmpty">Chưa có hoạt động nào</div></div>
       </div>
     </div>
-    <span id="whoami" style="font-weight:600;font-size:12px;color:var(--soft);margin-left:4px"></span>
+    <span id="whoami" style="font-weight:600;font-size:12px;color:var(--soft);margin-left:4px"></span><button class="btn sm" id="btnEditNick" onclick="openNickEditor()" title="Đổi nick name của bạn" style="margin-left:6px">✎ Nick</button>
     <button class="btn sm" onclick="logout()">🚪 Đăng xuất</button>
     <button class="btn sm" onclick="openDraw('data')">⋯ Dữ liệu</button>
   </div>
@@ -380,6 +384,15 @@ const ACCOUNTS=[
   {u:'tuyet', p:'123', name:'Tuyết yêu Tăng Phúc'},
   {u:'nhung', p:'123', name:'Nhung'},
 ];
+/* === Nickname toan he thong: {username: nickname} === */
+var __nicknames = {};
+function __loadNick(){ try{ var v=JSON.parse(localStorage.getItem('posm_nicknames')); if(v&&typeof v==='object') __nicknames=v; }catch(e){} return __nicknames; }
+function __saveNick(){ try{ localStorage.setItem('posm_nicknames', JSON.stringify(__nicknames)); }catch(e){} }
+__loadNick();
+function __accName(u){ var a=(typeof ACCOUNTS!=='undefined'?ACCOUNTS.find(function(x){return x.u===u;}):null); return (__nicknames&&__nicknames[u])||(a&&a.name)||u; }
+function __accByAny(str){ str=(str||'').trim(); if(typeof ACCOUNTS==='undefined')return null; var lo=str.toLowerCase(); return ACCOUNTS.find(function(a){ return a.name.toLowerCase()===lo || (__nicknames[a.u]&&__nicknames[a.u].toLowerCase()===lo) || a.u.toLowerCase()===lo; })||null; }
+function __mentionNames(){ return (typeof ACCOUNTS!=='undefined'?ACCOUNTS.map(function(a){return __accName(a.u);}):[]); }
+function __curUserObj(){ try{ return JSON.parse(localStorage.getItem('posm_session')); }catch(e){ return null; } }
 const BRANCHES=['Healing World Q2','Nhà hàng Quận 2','Healing Land Q7','Q7','Quận 1','Thủ Đức','Đà Nẵng','Khác'];
 const BRANCH_COLORS={
   'Quận 2':{bg:'#e3f1e8',fg:'#2f7d4f'}, 'Quận 7':{bg:'#e6edfb',fg:'#3556a8'},
@@ -1748,8 +1761,26 @@ function showWhoami(){
   try{
     var s = JSON.parse(localStorage.getItem('posm_session'));
     var el = document.getElementById('whoami');
-    if(el && s && s.name){ el.textContent = '👤 ' + s.name; }
+    if(el && s && s.name){ var disp=(typeof __accName==='function'?__accName(s.u):s.name); el.textContent = '\uD83D\uDC64 ' + disp; }
   }catch(e){}
+}
+/* === Doi nick name cua chinh minh (toan he thong) === */
+function openNickEditor(){
+  var s=(typeof __curUserObj==='function'?__curUserObj():null); if(!s||!s.u){ if(typeof toast==='function')toast('Bạn cần đăng nhập'); return; }
+  var cur=(__nicknames&&__nicknames[s.u])||'';
+  var v=window.prompt('Đặt nick name của bạn (mọi người sẽ thấy khi được @tag). Để trống để dùng tên gốc:', cur);
+  if(v===null) return;
+  saveNickName(s.u, v.trim());
+}
+function saveNickName(u, nick){
+  if(!u) return;
+  if(nick){ __nicknames[u]=nick; } else { delete __nicknames[u]; }
+  __saveNick();
+  showWhoami();
+  try{ if(typeof render==='function') render(); }catch(e){}
+  try{ var _sb=document.querySelector('#drawBody [onclick^="cmtSend("]'); if(_sb && typeof renderComments==='function'){ var _m=/cmtSend\('([^']+)'\)/.exec(_sb.getAttribute('onclick')); if(_m) renderComments(_m[1]); } }catch(e){}
+  try{ if(typeof apiPost==='function'){ apiPost({ tasks:{}, nicknames: __nicknames }); } }catch(e){}
+  if(typeof toast==='function') toast(nick?('Đã đổi nick: '+nick):'Đã xoá nick name');
 }
 showWhoami();
 /* === Thanh thong bao: ghi + hien thi lich su chinh sua ID === */
@@ -1811,6 +1842,7 @@ if(typeof pullShared==='function' && !pullShared.__wrapped){
     try{
       var b = await apiGet();
       if(b && Array.isArray(b.activity)){ __activity = b.activity; renderNotif(); }
+      if(b && b.nicknames && typeof b.nicknames==='object'){ __nicknames = b.nicknames; __saveNick(); showWhoami(); try{ if(typeof render==='function') render(); }catch(_e){} }
     }catch(e){}
     return r;
   };
@@ -1822,10 +1854,17 @@ function renderNotif(){
   var list=document.getElementById('notifList');
   var badge=document.getElementById('notifBadge');
   if(!list) return;
-  var acts=(__activity||[]).slice().sort(function(x,y){return (y.at||0)-(x.at||0);});
+  var meU=(typeof __curUserObj==='function'&&__curUserObj())?__curUserObj().u:null;
+  var acts=(__activity||[]).slice().filter(function(a){
+    if(a && a.type==='mention'){ return meU && Array.isArray(a.to) && a.to.indexOf(meU)>=0; }
+    return true;
+  }).sort(function(x,y){return (y.at||0)-(x.at||0);});
   if(!acts.length){ list.innerHTML='<div class="notifEmpty">Chưa có hoạt động nào</div>'; }
   else{
     list.innerHTML = acts.map(function(a){
+      if(a.type==='mention'){
+        return '<div class="notifItem notifMention" data-goto="'+__esc(a.taskId||a.id)+'" data-cid="'+__esc(a.cid||'')+'" title="Bạn được nhắc tới — bấm để tới bình luận"><b>'+__esc((typeof __accByAny==='function'&&__accByAny(a.by))?__accName(__accByAny(a.by).u):a.by)+'</b> đã nhắc tới bạn trong <b>'+__esc(a.name||a.taskId||a.id)+'</b><div class="t">'+__relTime(a.at)+'</div></div>';
+      }
       return '<div class="notifItem" data-goto="'+__esc(a.id)+'" title="Bấm để tới thay đổi này"><b>'+__esc(a.by)+'</b> vừa cập nhật <b>'+__esc(a.name||a.id)+'</b><div class="t">'+__relTime(a.at)+'</div></div>';
     }).join('');
   }
@@ -1851,7 +1890,7 @@ function cmtCount(t){ try{ return (t&&Array.isArray(t.comments))?t.comments.leng
 function __cmtTime(ts){ try{ var d=new Date(ts); var p=n=>('0'+n).slice(-2); return p(d.getDate())+'/'+p(d.getMonth()+1)+' '+p(d.getHours())+':'+p(d.getMinutes()); }catch(e){ return ''; } }
 function __cmtLinkify(s){
   var esc=__esc(s||'');
-  esc=esc.replace(/@([A-Za-zÀ-ỹ0-9]+(?:\s[A-Za-zÀ-ỹ0-9]+)?)/g,function(m){ return '<span class="cmtMention">'+m+'</span>'; });
+  esc=esc.replace(/@([A-Za-zÀ-ỹ0-9]+(?:\s[A-Za-zÀ-ỹ0-9]+)?)/g,function(m,nm){ var acc=(typeof __accByAny==='function'?__accByAny(nm):null); var disp=acc?('@'+__accName(acc.u)):m; var uattr=acc?(' data-u="'+__esc(acc.u)+'"'):''; return '<span class="cmtMention"'+uattr+'>'+__esc(disp)+'</span>'; });
   esc=esc.replace(/(https?:\/\/[^\s<]+)/g,function(u){
     if(/\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(u)) return '<br><img class="cmtImg" src="'+u+'" onclick="window.open(this.src,\'_blank\')">';
     return '<a href="'+u+'" target="_blank" rel="noopener">'+u+'</a>';
@@ -1866,7 +1905,7 @@ function __cmtNode(id, c, depth){
   if(mine){ acts+='<button class="cmtAct" onclick="cmtEdit(\''+id+'\',\''+c.cid+'\')">Sua</button><button class="cmtAct del" onclick="cmtDel(\''+id+'\',\''+c.cid+'\')">Xoa</button>'; }
   var edited=c.edited?' <i style="color:var(--muted)">(da sua)</i>':'';
   var html='<div class="cmtItem" style="margin-left:'+pad+'px" data-cid="'+c.cid+'">'
-    +'<div class="cmtHead"><b>'+__esc(c.by)+'</b><span class="cmtTime">'+__cmtTime(c.at)+edited+'</span></div>'
+    +'<div class="cmtHead"><b>'+__esc((function(){var a=(typeof __accByAny==='function'?__accByAny(c.by):null); return a?__accName(a.u):c.by;})())+'</b><span class="cmtTime">'+__cmtTime(c.at)+edited+'</span></div>'
     +'<div class="cmtBody">'+__cmtLinkify(c.text)+'</div>'
     +'<div class="cmtActs">'+acts+'</div></div>';
   return html;
@@ -1954,6 +1993,17 @@ function cmtSend(id){
     t.comments.push({ cid:'c'+Date.now()+Math.random().toString(36).slice(2,6), by:__cmtUser(), text:txt, at:Date.now(), parent:(st.parent||'') });
   }
   t.updated=todayStr(0); save(); queuePush(id);
+  /* === Thong bao khi bi @tag: nhay thang toi dung binh luan === */
+  try{
+    var _cid = (st.edit)? st.edit : (t.comments.length? t.comments[t.comments.length-1].cid : '');
+    var _mts = []; var _re=/@([A-Za-zÀ-ỹ0-9]+(?:\s[A-Za-zÀ-ỹ0-9]+)?)/g, _mm;
+    while((_mm=_re.exec(txt))!==null){ var _acc=(typeof __accByAny==='function'?__accByAny(_mm[1]):null); if(_acc && _mts.indexOf(_acc.u)<0) _mts.push(_acc.u); }
+    var _me=(typeof __curUserObj==='function'?__curUserObj():null);
+    _mts = _mts.filter(function(u){ return !_me || u!==_me.u; });
+    if(_mts.length && typeof __pendingActs!=='undefined'){
+      __pendingActs.push({ type:'mention', id:id, taskId:id, cid:_cid, to:_mts, name:(typeof __taskLabel==='function'?__taskLabel(id):id), by:__cmtUser(), at:Date.now() });
+    }
+  }catch(e){}
   cmtCancelReply();
   renderComments(id);
   var cc=document.getElementById('cmtCnt'); if(cc) cc.textContent=cmtCount(t);
@@ -1964,7 +2014,7 @@ function cmtOnType(ta){
   var menu=document.getElementById('cmtMenu'); if(!menu) return;
   if(!m){ menu.style.display='none'; return; }
   var q=(m[1]||'').toLowerCase();
-  var names=(typeof ACCOUNTS!=='undefined'?ACCOUNTS.map(function(a){return a.name;}):[]);
+  var names=(typeof __mentionNames==='function'?__mentionNames():(typeof ACCOUNTS!=='undefined'?ACCOUNTS.map(function(a){return a.name;}):[]));
   var hit=names.filter(function(n){ return n.toLowerCase().indexOf(q)>=0; });
   if(!hit.length){ menu.style.display='none'; return; }
   menu.innerHTML=hit.map(function(n){ return '<div class="cmtMi" onclick="cmtPickMention(\''+n.replace(/'/g,"\\'")+'\')">@'+__esc(n)+'</div>'; }).join('');
@@ -1994,7 +2044,7 @@ function cmtAddEmoji(e){
 }
 
 var __notifTimer = null;
-function gotoTask(id){
+function gotoTask(id, cid){
   if(!id) return;
   // Tu chuyen sang dung view (POSM / Standee-Tentcard-TV / Promo / Bang) chua task truoc khi cuon toi
   try{
@@ -2020,6 +2070,18 @@ function gotoTask(id){
     document.querySelectorAll('.card.notif-target').forEach(function(c){ c.classList.remove('notif-target'); });
     if(__notifTimer){ clearTimeout(__notifTimer); }
     card.classList.add('notif-target');
+    if(cid){
+      try{ if(typeof openTask==='function') openTask(id); }catch(e){}
+      (function jumpCmt(tri){
+        var cel = document.querySelector('#drawBody [data-cid="'+(window.CSS&&CSS.escape?CSS.escape(cid):cid)+'"]');
+        if(!cel && tri<25){ return setTimeout(function(){ jumpCmt(tri+1); }, 120); }
+        if(!cel) return;
+        try{ cel.scrollIntoView({behavior:'smooth', block:'center'}); }catch(e){}
+        document.querySelectorAll('.cmtItem.notif-target,[data-cid].notif-target').forEach(function(x){ x.classList.remove('notif-target'); });
+        cel.classList.add('notif-target');
+        setTimeout(function(){ cel.classList.remove('notif-target'); }, 3200);
+      })(0);
+    }
     __notifTimer = setTimeout(function(){ card.classList.remove('notif-target'); __notifTimer = null; }, 3000);
   })();
 }
@@ -2030,7 +2092,7 @@ document.addEventListener('click', function(ev){
   var item = ev.target.closest && ev.target.closest('.notifItem');
   if(item && item.getAttribute('data-goto')){
     ev.preventDefault(); ev.stopPropagation();
-    gotoTask(item.getAttribute('data-goto'));
+    gotoTask(item.getAttribute('data-goto'), item.getAttribute('data-cid')||'');
     return;
   }
   var w = ev.target.closest && ev.target.closest('.notifWrap');
