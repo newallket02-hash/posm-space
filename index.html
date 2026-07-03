@@ -269,6 +269,13 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
 .notifItem .t{color:var(--muted);font-size:11px;margin-top:2px}
 .notifEmpty{padding:20px 13px;text-align:center;color:var(--muted);font-size:12px}
 
+
+/* ===== Avatar theo ID (them moi) ===== */
+.myAvaWrap{display:inline-flex;align-items:center;gap:6px}
+.myAva{width:30px;height:30px;border-radius:50%;object-fit:cover;border:1.5px solid var(--line);background:var(--gold-soft);cursor:pointer;flex:none;transition:.12s}
+.myAva:hover{border-color:var(--gold)}
+.myAvaFallback{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;background:var(--gold);cursor:pointer;flex:none;border:1.5px solid var(--line);text-transform:uppercase}
+.myAvaFallback:hover{filter:brightness(1.05)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link href="https://unpkg.com/tabulator-tables@5.6.1/dist/css/tabulator.min.css" rel="stylesheet">
@@ -304,7 +311,7 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
         <div id="notifList"><div class="notifEmpty">Chưa có hoạt động nào</div></div>
       </div>
     </div>
-    <span id="whoami" style="font-weight:600;font-size:12px;color:var(--soft);margin-left:4px"></span><button class="btn sm" id="btnEditNick" onclick="openNickEditor()" title="Đổi nick name của bạn" style="margin-left:6px">✎ Nick</button>
+    <span class="myAvaWrap"><span id="myAvaHost" onclick="openAvatarEditor()" title="Doi anh dai dien cua ban"></span></span><span id="whoami" style="font-weight:600;font-size:12px;color:var(--soft);margin-left:4px"></span><button class="btn sm" id="btnEditNick" onclick="openNickEditor()" title="Đổi nick name của bạn" style="margin-left:6px">✎ Nick</button>
     <button class="btn sm" onclick="logout()">🚪 Đăng xuất</button>
     <button class="btn sm" onclick="openDraw('data')">⋯ Dữ liệu</button>
   </div>
@@ -2197,6 +2204,88 @@ if(typeof render==='function' && !render.__sortWrapped){
 }
 
 boot();
+</script>
+<script>
+/* ===== Avatar theo ID (them moi) ===== */
+var __avatars = {};
+function __loadAvatar(){
+  try{ __avatars = JSON.parse(localStorage.getItem('posm_avatars')) || {}; }
+  catch(e){ __avatars = {}; }
+  return __avatars;
+}
+function __saveAvatar(){
+  try{ localStorage.setItem('posm_avatars', JSON.stringify(__avatars)); }catch(e){}
+}
+function __avatarFor(u){
+  if(!u) return '';
+  if(!__avatars || Object.keys(__avatars).length===0) __loadAvatar();
+  return (__avatars && __avatars[u]) ? __avatars[u] : '';
+}
+function __avaInitial(){
+  try{
+    var s = __curUserObj();
+    if(!s) return '?';
+    var nm = (typeof __accName==='function' ? __accName(s.u) : (s.name||s.u)) || s.u || '?';
+    nm = String(nm).trim();
+    return nm ? nm.charAt(0) : '?';
+  }catch(e){ return '?'; }
+}
+function refreshMyAvatar(){
+  var host = document.getElementById('myAvaHost');
+  if(!host) return;
+  var s = null;
+  try{ s = __curUserObj(); }catch(e){}
+  if(!s || !s.u){ host.innerHTML=''; return; }
+  var data = __avatarFor(s.u);
+  if(data){
+    host.innerHTML = '<img class="myAva" src="'+data+'" alt="avatar">';
+  }else{
+    host.innerHTML = '<span class="myAvaFallback">'+__avaInitial()+'</span>';
+  }
+}
+function openAvatarEditor(){
+  var s = null;
+  try{ s = __curUserObj(); }catch(e){}
+  if(!s || !s.u){ if(typeof toast==='function') toast('Ban can dang nhap truoc'); return; }
+  var inp = document.createElement('input');
+  inp.type='file'; inp.accept='image/*';
+  inp.onchange=function(){
+    var f = inp.files && inp.files[0];
+    if(!f) return;
+    if(!/^image\//.test(f.type)){ if(typeof toast==='function') toast('Vui long chon file anh'); return; }
+    var reader = new FileReader();
+    reader.onload=function(ev){
+      var img = new Image();
+      img.onload=function(){
+        var max=256, w=img.width, h=img.height;
+        if(w>h){ if(w>max){ h=Math.round(h*max/w); w=max; } }
+        else { if(h>max){ w=Math.round(w*max/h); h=max; } }
+        var cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+        var ctx=cv.getContext('2d'); ctx.drawImage(img,0,0,w,h);
+        var out = cv.toDataURL('image/jpeg', 0.85);
+        __loadAvatar();
+        __avatars[s.u] = out;
+        __saveAvatar();
+        refreshMyAvatar();
+        if(typeof render==='function'){ try{ render(); }catch(e){} }
+        if(typeof toast==='function') toast('Da cap nhat anh dai dien');
+      };
+      img.onerror=function(){ if(typeof toast==='function') toast('Khong doc duoc anh'); };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(f);
+  };
+  inp.click();
+}
+if(typeof showWhoami==='function'){
+  var __origShowWhoami = showWhoami;
+  showWhoami = function(){
+    var r = __origShowWhoami.apply(this, arguments);
+    try{ refreshMyAvatar(); }catch(e){}
+    return r;
+  };
+}
+try{ __loadAvatar(); refreshMyAvatar(); }catch(e){}
 </script>
 </body>
 </html>
