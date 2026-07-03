@@ -2267,6 +2267,7 @@ function openAvatarEditor(){
         __avatars[s.u] = out;
         __saveAvatar();
         refreshMyAvatar();
+        __pushAvatarServer(s.u, out);
         if(typeof render==='function'){ try{ render(); }catch(e){} }
         if(typeof toast==='function') toast('Da cap nhat anh dai dien');
       };
@@ -2285,7 +2286,41 @@ if(typeof showWhoami==='function'){
     return r;
   };
 }
-try{ __loadAvatar(); refreshMyAvatar(); }catch(e){}
+
+/* ===== Dong bo avatar len server chung (reuse apiGet/apiPost) ===== */
+function __pushAvatarServer(id, img){
+  try{
+    if(typeof apiPost!=='function') return;
+    apiPost({ type:'avatar', id:id, img:img }).catch(function(){});
+  }catch(e){}
+}
+function __applyServerAvatars(map){
+  if(!map || typeof map!=='object') return;
+  __loadAvatar();
+  var changed=false;
+  for(var k in map){ if(Object.prototype.hasOwnProperty.call(map,k)){
+    if(map[k] && __avatars[k]!==map[k]){ __avatars[k]=map[k]; changed=true; }
+  }}
+  if(changed){ __saveAvatar(); refreshMyAvatar(); }
+}
+function __pullAvatarsServer(){
+  try{
+    if(typeof apiGet!=='function') return;
+    var res = apiGet();
+    Promise.resolve(res).then(function(b){
+      if(b && b.avatars) __applyServerAvatars(b.avatars);
+    }).catch(function(){});
+  }catch(e){}
+}
+if(typeof pullShared==='function'){
+  var __origPullShared = pullShared;
+  pullShared = function(){
+    var r = __origPullShared.apply(this, arguments);
+    try{ __pullAvatarsServer(); }catch(e){}
+    return r;
+  };
+}
+try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
 </script>
 </body>
 </html>
