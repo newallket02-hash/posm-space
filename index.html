@@ -2813,5 +2813,137 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
 })();
 </script>
 
+<style id="ctkm-dash-css">
+#ctkmNumWrap .cn-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px}
+#ctkmNumWrap .cn-leg{font-size:12px;color:#444;display:flex;align-items:center;gap:5px}
+#ctkmNumWrap .cn-leg i{width:14px;height:3px;border-radius:2px;display:inline-block}
+#ctkmNumWrap #d_stat{margin-top:8px;font-weight:600;color:#111}
+</style>
+<script id="ctkm-dash-js">
+(function(){
+  'use strict';
+  function api(){return window.CTKMNUM;}
+  var SLOTS=[{k:'s9',label:'9h-11h'},{k:'s12',label:'12h-19h'},{k:'s19',label:'19h-24h'}];
+  function toISO(dmy){var m=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dmy);return m?m[3]+'-'+m[2]+'-'+m[1]:dmy;}
+  function dayNum(dmy){var m=/^(\d{2})\//.exec(dmy);return m?parseInt(m[1],10):0;}
+  var COLORS=['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed'];
+
+  function hssvMonths(){var d=api().ensureSeed();return ['T5','T6','T7'].filter(function(m){return d.hssv[m]&&d.hssv[m].length;});}
+  function metricVal(prog,r,metric){
+    if(prog==='promo'){ if(metric==='sl')return r.sl; if(metric==='tk')return r.tk; if(metric==='moi')return r.moi; return null; }
+    // hssv
+    if(metric==='totHSSV')return r.totHSSV;
+    if(metric==='totKhach')return r.totKhach;
+    if(metric==='rate')return (r.totHSSV&&r.totKhach)?(r.totHSSV/r.totKhach*100):null;
+    // per-slot sl sum handled elsewhere
+    return null;
+  }
+
+  function ensureDashUI(){
+    var wrap=document.getElementById('ctkmNumWrap'); if(!wrap)return;
+    if(document.getElementById('cnDashCard'))return;
+    var card=document.createElement('div'); card.className='cn-card'; card.id='cnDashCard';
+    card.innerHTML=''
+      +'<h3 class="cn-h">Dashboard tăng trưởng</h3>'
+      +'<div class="cn-row" style="margin-bottom:6px">'
+      +'<div class="cn-f"><label>Chương trình</label><select id="d_prog"><option value="hssv">HSSV</option><option value="promo">Chương trình tối</option></select></div>'
+      +'<div class="cn-f"><label>Chỉ số</label><select id="d_metric"></select></div>'
+      +'<div class="cn-f"><label>Kiểu so sánh</label><select id="d_mode"><option value="months">So sánh cùng kỳ các tháng (theo ngày trong tháng)</option><option value="series">Chuỗi theo ngày (1 tháng)</option></select></div>'
+      +'<div class="cn-f" id="d_monthWrap" style="display:none"><label>Tháng</label><select id="d_month"></select></div>'
+      +'</div>'
+      +'<div id="d_chart"></div>'
+      +'<div id="d_legend" class="cn-legend"></div>'
+      +'<div id="d_stat" class="cn-hint"></div>';
+    wrap.appendChild(card);
+    document.getElementById('d_prog').addEventListener('change',function(){fillMetric();fillMonth();draw();});
+    document.getElementById('d_metric').addEventListener('change',draw);
+    document.getElementById('d_mode').addEventListener('change',function(){toggleMonth();draw();});
+    document.getElementById('d_month').addEventListener('change',draw);
+    fillMetric();fillMonth();toggleMonth();draw();
+  }
+  function fillMetric(){
+    var prog=document.getElementById('d_prog').value;
+    var opts = prog==='hssv'
+      ? [['totHSSV','Tổng HSSV/ngày'],['totKhach','Tổng khách/ngày'],['rate','Tỷ lệ HSSV (%)']]
+      : [['sl','Số khách gói'],['tk','Tổng khách'],['moi','% Mới']];
+    document.getElementById('d_metric').innerHTML=opts.map(function(o){return '<option value="'+o[0]+'">'+o[1]+'</option>';}).join('');
+  }
+  function fillMonth(){
+    var prog=document.getElementById('d_prog').value;
+    var months = prog==='hssv'?hssvMonths():['T6','T7'];
+    document.getElementById('d_month').innerHTML=months.map(function(m){return '<option value="'+m+'">Tháng '+m.slice(1)+'</option>';}).join('');
+  }
+  function toggleMonth(){
+    var mode=document.getElementById('d_mode').value;
+    document.getElementById('d_monthWrap').style.display = mode==='series'?'flex':'none';
+  }
+  function getMonthRows(prog,mon){
+    var d=api().ensureSeed();
+    if(prog==='hssv')return (d.hssv[mon]||[]);
+    var blk=d.promo[mon]; return blk&&blk.rows||[];
+  }
+
+  function draw(){
+    var prog=document.getElementById('d_prog').value;
+    var metric=document.getElementById('d_metric').value;
+    var mode=document.getElementById('d_mode').value;
+    var series=[]; // {name,color,points:[{x,y}]}
+    if(mode==='months'){
+      var months = prog==='hssv'?hssvMonths():['T6','T7'];
+      months.forEach(function(m,mi){
+        var rows=getMonthRows(prog,m);
+        var pts=rows.map(function(r){var y=metricVal(prog,r,metric);return (y==null)?null:{x:dayNum(r.date),y:y};}).filter(Boolean);
+        pts.sort(function(a,b){return a.x-b.x;});
+        var lbl='Tháng '+m.slice(1); if(prog==='promo')lbl+=(m==='T7'?' (139k)':' (110k)');
+        series.push({name:lbl,color:COLORS[mi%COLORS.length],points:pts});
+      });
+    }else{
+      var mon=document.getElementById('d_month').value;
+      var rows=getMonthRows(prog,mon).slice().sort(function(a,b){return toISO(a.date)<toISO(b.date)?-1:1;});
+      var pts=rows.map(function(r){var y=metricVal(prog,r,metric);return (y==null)?null:{x:dayNum(r.date),y:y};}).filter(Boolean);
+      series.push({name:'Tháng '+mon.slice(1),color:COLORS[0],points:pts});
+    }
+    renderChart(series);
+  }
+
+  function renderChart(series){
+    var W=980,H=340,pad={l:48,r:16,t:16,b:34};
+    var allX=[],allY=[];
+    series.forEach(function(s){s.points.forEach(function(p){allX.push(p.x);allY.push(p.y);});});
+    var host=document.getElementById('d_chart');
+    if(!allX.length){host.innerHTML='<div class="cn-hint" style="padding:20px">Chưa có dữ liệu để vẽ.</div>';document.getElementById('d_legend').innerHTML='';document.getElementById('d_stat').textContent='';return;}
+    var minX=Math.min.apply(null,allX),maxX=Math.max.apply(null,allX);
+    var minY=0,maxY=Math.max.apply(null,allY); if(maxY===minY)maxY=minY+1;
+    function X(x){return pad.l+(maxX===minX?0:(x-minX)/(maxX-minX))*(W-pad.l-pad.r);}
+    function Y(y){return H-pad.b-(y-minY)/(maxY-minY)*(H-pad.t-pad.b);}
+    var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;background:#fff">';
+    // y gridlines
+    for(var i=0;i<=4;i++){var yv=minY+(maxY-minY)*i/4;var yy=Y(yv);svg+='<line x1="'+pad.l+'" y1="'+yy+'" x2="'+(W-pad.r)+'" y2="'+yy+'" stroke="#eee"/><text x="'+(pad.l-6)+'" y="'+(yy+4)+'" font-size="11" fill="#888" text-anchor="end">'+Math.round(yv)+'</text>';}
+    // x axis labels (days)
+    for(var d=minX;d<=maxX;d+=Math.max(1,Math.ceil((maxX-minX)/12))){svg+='<text x="'+X(d)+'" y="'+(H-pad.b+16)+'" font-size="10" fill="#888" text-anchor="middle">'+d+'</text>';}
+    series.forEach(function(s){
+      if(!s.points.length)return;
+      var dpath=s.points.map(function(p,i){return (i?'L':'M')+X(p.x).toFixed(1)+' '+Y(p.y).toFixed(1);}).join(' ');
+      svg+='<path d="'+dpath+'" fill="none" stroke="'+s.color+'" stroke-width="2"/>';
+      s.points.forEach(function(p){svg+='<circle cx="'+X(p.x).toFixed(1)+'" cy="'+Y(p.y).toFixed(1)+'" r="2.5" fill="'+s.color+'"/>';});
+    });
+    svg+='</svg>';
+    host.innerHTML=svg;
+    document.getElementById('d_legend').innerHTML=series.map(function(s){return '<span class="cn-leg"><i style="background:'+s.color+'"></i>'+s.name+'</span>';}).join('');
+    // growth stat: compare first vs last month totals if months mode
+    var stat='';
+    if(series.length>=2){
+      function sum(s){return s.points.reduce(function(a,p){return a+p.y;},0);}
+      var a=sum(series[0]),b=sum(series[series.length-1]);
+      if(a>0){var g=((b-a)/a*100);stat='Tổng '+series[0].name+': '+Math.round(a)+' → '+series[series.length-1].name+': '+Math.round(b)+' ('+(g>=0?'+':'')+g.toFixed(1)+'%)';}
+    }
+    document.getElementById('d_stat').textContent=stat;
+  }
+  window.CTKMDASH={draw:draw};
+  function init(){ensureDashUI();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+
 </body>
 </html>
