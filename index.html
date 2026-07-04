@@ -2527,5 +2527,182 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
 })();
 </script>
 
+<style id="ctkm-num-css">
+#ctkmNumWrap{display:none;padding:12px;max-width:1100px;margin:0 auto;font-size:14px}
+#ctkmNumWrap .cn-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+#ctkmNumWrap h3.cn-h{margin:0 0 10px;font-size:16px;font-weight:700;color:#111}
+#ctkmNumWrap .cn-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+#ctkmNumWrap .cn-f{display:flex;flex-direction:column;gap:4px}
+#ctkmNumWrap .cn-f label{font-size:12px;color:#555;font-weight:600}
+#ctkmNumWrap select,#ctkmNumWrap input{border:1px solid #d1d5db;border-radius:7px;padding:7px 9px;font-size:14px;background:#fff}
+#ctkmNumWrap input[type=number]{width:88px}
+#ctkmNumWrap .cn-slot{border:1px solid #eee;border-radius:8px;padding:10px;margin-top:8px;background:#fafafa}
+#ctkmNumWrap .cn-slot .cn-st{font-weight:700;color:#2563eb;margin-bottom:6px;font-size:13px}
+#ctkmNumWrap .cn-btn{background:#2563eb;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer}
+#ctkmNumWrap .cn-btn.sec{background:#eef2ff;color:#2563eb}
+#ctkmNumWrap .cn-btn:hover{opacity:.92}
+#ctkmNumWrap .cn-hint{font-size:12px;color:#888;margin-top:6px}
+.tabs button#tabCtkmNum.on{}
+</style>
+<script id="ctkm-num-js">
+(function(){
+  'use strict';
+  var STORE_KEY='ctkm_num_v1';
+  var SEED={"hssv":{"T5":[{"date":"04/05/2026","thu":"Thứ 2","s9":{"sl":34,"moi":40,"cu":60,"tk":180},"s12":{"sl":53,"moi":60,"cu":40,"tk":332},"s19":{"sl":20,"moi":20,"cu":80,"tk":12},"totHSSV":107,"totKhach":524},{"date":"05/05/2026","thu":"Thứ 3","s9":{"sl":42,"moi":60,"cu":40,"tk":180},"s12":{"sl":80,"moi":50,"cu":50,"tk":230},"s19":{"sl":14,"moi":60,"cu":100,"tk":101},"totHSSV":136,"totKhach":511},{"date":"06/05/2026","thu":"Thứ 4","s9":{"sl":53,"moi":70,"cu":30,"tk":180},"s12":{"sl":69,"moi":50,"cu":50,"tk":249},"s19":{"sl":13,"moi":100,"cu":0,"tk":108},"totHSSV":135,"totKhach":537},{"date":"07/05/2026","thu":"Thứ 5","s9":{"sl":99,"moi":60,"cu":40,"tk":239},"s12":{"sl":65,"moi":60,"cu":40,"tk":166},"s19":{"sl":62,"moi":70,"cu":30,"tk":236},"totHSSV":226,"totKhach":641},{"date":"08/05/2026","thu":"Thứ 6","s9":{"sl":73,"moi":60,"cu":40,"tk":277},"s12":{"sl":132,"moi":65,"cu":35,"tk":321},"s19":{"sl":41,"moi":75,"cu":25,"tk":139},"totHSSV":246,"totKhach":737},{"date":"04/04/2026","thu":"Thứ 7","s9":{"sl":null,"moi":null,"cu":null,"tk":null},"s12":{"sl":null,"moi":null,"cu":null,"tk":0},"s19":{"sl":null,"moi":null,"cu":null,"tk":0},"totHSSV":null,"totKhach":null},{"date":"05/04/2026","thu":"Chủ Nhật","s9":{"sl":null,"moi":null,"cu":null,"tk":null},"s12":{"sl":null,"moi":null,"cu":null,"tk":0},"s19":{"sl":null,"moi":null,"cu":null,"tk":0},"totHSSV":null,"totKhach":null},{"date":"11/05/2026","thu":"Thứ 2","s9":{"sl":86,"moi":70,"cu":30,"tk":210},"s12":{"sl":101,"moi":60,"cu":40,"tk":258},"s19":{"sl":15,"moi":50,"cu":50,"tk":112},"totHSSV":202,"totKhach":580},{"date":"12/05/2026","thu":"Thứ 3","s9":{"sl":67,"moi":65,"cu":35,"tk":225},"s12":{"sl":87,"moi":50,"cu":50,"tk":363},"s19":{"sl":18,"moi":60,"cu":40,"tk":57},"totHSSV":172,"totKhach":645},{"date":"13/05/2026","thu":"Thứ 4","s9":{"sl":80,"moi":50,"cu":50,"tk":218},"s12":{"sl":94,"moi":70,"cu":30,"tk":347},"s19":{"sl":23,"moi":55,"cu":45,"tk":90},"totHSSV":197,"totKhach":655},{"date":"14/05/2026","thu":"Thứ 5","s9":{"sl":92,"moi":50,"cu":50,"tk":240},"s12":{"sl":92,"moi":60,"cu":40,"tk":300},"s19":{"sl":30,"moi":70,"cu":30,"tk":132},"totHSSV":214,"totKhach":672},{"date":"15/05/2026","thu":"Thứ 6","s9":{"sl":78,"moi":70,"cu":30,"tk":255},"s12":{"sl":127,"moi":50,"cu":50,"tk":456},"s19":{"sl":63,"moi":40,"cu":60,"tk":131},"totHSSV":268,"totKhach":842},{"date":"11/04/2026","thu":"Thứ 7","s9":{"sl":null,"moi":null,"cu":null,"tk":null},"s12":{"sl":null,"moi":null,"cu":null,"tk":0},"s19":{"sl":null,"moi":null,"cu":null,"tk":0},"totHSSV":null,"totKhach":null},{"date":"18/05/2026","thu":"Thứ 2","s9":{"sl":64,"moi":70,"cu":30,"tk":188},"s12":{"sl":96,"moi":65,"cu":35,"tk":257},"s19":{"sl":33,"moi":60,"cu":40,"tk":120},"totHSSV":193,"totKhach":565},{"date":"19/05/2026","thu":"Thứ 3","s9":{"sl":78,"moi":60,"cu":40,"tk":195},"s12":{"sl":75,"moi":80,"cu":20,"tk":313},"s19":{"sl":22,"moi":35,"cu":65,"tk":63},"totHSSV":175,"totKhach":571},{"date":"20/05/2026","thu":"Thứ 4","s9":{"sl":80,"moi":50,"cu":50,"tk":195},"s12":{"sl":100,"moi":50,"cu":50,"tk":307},"s19":{"sl":31,"moi":15,"cu":85,"tk":116},"totHSSV":211,"totKhach":618},{"date":"21/05/2026","thu":"Thứ 5","s9":{"sl":97,"moi":65,"cu":35,"tk":237},"s12":{"sl":111,"moi":70,"cu":30,"tk":303},"s19":{"sl":27,"moi":20,"cu":80,"tk":142},"totHSSV":235,"totKhach":682},{"date":"22/05/2026","thu":"Thứ 6","s9":{"sl":114,"moi":80,"cu":20,"tk":254},"s12":{"sl":105,"moi":35,"cu":65,"tk":341},"s19":{"sl":51,"moi":70,"cu":30,"tk":197},"totHSSV":270,"totKhach":792},{"date":"18/04/2026","thu":"Thứ 7","s9":{"sl":null,"moi":null,"cu":null,"tk":null},"s12":{"sl":null,"moi":null,"cu":null,"tk":0},"s19":{"sl":null,"moi":null,"cu":null,"tk":0},"totHSSV":null,"totKhach":null},{"date":"19/04/2026","thu":"Chủ Nhật","s9":{"sl":null,"moi":null,"cu":null,"tk":null},"s12":{"sl":null,"moi":null,"cu":null,"tk":0},"s19":{"sl":null,"moi":null,"cu":null,"tk":0},"totHSSV":null,"totKhach":null},{"date":"25/05/2026","thu":"Thứ 2","s9":{"sl":83,"moi":45,"cu":55,"tk":236},"s12":{"sl":175,"moi":70,"cu":30,"tk":316},"s19":{"sl":22,"moi":100,"cu":0,"tk":154},"totHSSV":280,"totKhach":706},{"date":"26/05/2026","thu":"Thứ 3","s9":{"sl":104,"moi":75,"cu":25,"tk":234},"s12":{"sl":119,"moi":60,"cu":40,"tk":251},"s19":{"sl":41,"moi":50,"cu":50,"tk":161},"totHSSV":264,"totKhach":646},{"date":"27/05/2026","thu":"Thứ 4","s9":{"sl":80,"moi":50,"cu":50,"tk":218},"s12":{"sl":110,"moi":65,"cu":35,"tk":315},"s19":{"sl":41,"moi":80,"cu":20,"tk":122},"totHSSV":231,"totKhach":655},{"date":"28/05/2026","thu":"Thứ 5","s9":{"sl":91,"moi":60,"cu":40,"tk":245},"s12":{"sl":110,"moi":70,"cu":30,"tk":287},"s19":{"sl":33,"moi":65,"cu":35,"tk":114},"totHSSV":234,"totKhach":646},{"date":"29/05/2026","thu":"Thứ 6","s9":{"sl":127,"moi":65,"cu":35,"tk":276},"s12":{"sl":170,"moi":55,"cu":45,"tk":393},"s19":{"sl":41,"moi":70,"cu":30,"tk":211},"totHSSV":338,"totKhach":880},{"date":"18/04/2026","thu":"Thứ 7","s9":{"sl":null,"moi":null,"cu":null,"tk":null},"s12":{"sl":null,"moi":null,"cu":null,"tk":0},"s19":{"sl":null,"moi":null,"cu":null,"tk":0},"totHSSV":null,"totKhach":null},{"date":"19/04/2026","thu":"Chủ Nhật","s9":{"sl":null,"moi":null,"cu":null,"tk":null},"s12":{"sl":null,"moi":null,"cu":null,"tk":0},"s19":{"sl":null,"moi":null,"cu":null,"tk":0},"totHSSV":null,"totKhach":null}],"T6":[{"date":"01/06/2026","thu":"Thứ 2","s9":{"sl":84,"moi":70,"cu":30,"tk":300},"s12":{"sl":108,"moi":60,"cu":40,"tk":270},"s19":{"sl":16,"moi":80,"cu":20,"tk":93},"totHSSV":208,"totKhach":663},{"date":"02/06/2026","thu":"Thứ 3","s9":{"sl":80,"moi":60,"cu":40,"tk":290},"s12":{"sl":90,"moi":75,"cu":25,"tk":238},"s19":{"sl":25,"moi":70,"cu":100,"tk":88},"totHSSV":195,"totKhach":616},{"date":"03/06/2026","thu":"Thứ 4","s9":{"sl":81,"moi":50,"cu":50,"tk":241},"s12":{"sl":101,"moi":60,"cu":40,"tk":299},"s19":{"sl":11,"moi":75,"cu":25,"tk":108},"totHSSV":193,"totKhach":648},{"date":"04/06/2026","thu":"Thứ 5","s9":{"sl":141,"moi":65,"cu":35,"tk":299},"s12":{"sl":132,"moi":50,"cu":50,"tk":346},"s19":{"sl":19,"moi":50,"cu":50,"tk":137},"totHSSV":292,"totKhach":782},{"date":"05/06/2026","thu":"Thứ 6","s9":{"sl":150,"moi":35,"cu":65,"tk":306},"s12":{"sl":110,"moi":85,"cu":15,"tk":354},"s19":{"sl":44,"moi":70,"cu":30,"tk":246},"totHSSV":304,"totKhach":906},{"date":"04/04/2026","thu":"Thứ 7","s9":{"sl":null,"moi":null,"cu":null,"tk":null},"s12":{"sl":null,"moi":null,"cu":null,"tk":0},"s19":{"sl":null,"moi":null,"cu":null,"tk":0},"totHSSV":null,"totKhach":null},{"date":"05/04/2026","thu":"Chủ Nhật","s9":{"sl":null,"moi":null,"cu":null,"tk":null},"s12":{"sl":null,"moi":null,"cu":null,"tk":0},"s19":{"sl":null,"moi":null,"cu":null,"tk":0},"totHSSV":null,"totKhach":null},{"date":"08/06/2026","thu":"Thứ 2","s9":{"sl":89,"moi":70,"cu":30,"tk":240},"s12":{"sl":118,"moi":70,"cu":30,"tk":295},"s19":{"sl":13,"moi":80,"cu":20,"tk":123},"totHSSV":220,"totKhach":658},{"date":"09/06/2026","thu":"Thứ 3","s9":{"sl":111,"moi":60,"cu":40,"tk":272},"s12":{"sl":142,"moi":60,"cu":40,"tk":355},"s19":{"sl":32,"moi":70,"cu":30,"tk":102},"totHSSV":285,"totKhach":729},{"date":"10/06/2026","thu":"Thứ 4","s9":{"sl":77,"moi":50,"cu":50,"tk":260},"s12":{"sl":140,"moi":60,"cu":40,"tk":320},"s19":{"sl":24,"moi":50,"cu":50,"tk":145},"totHSSV":241,"totKhach":725},{"date":"11/06/2026","thu":"Thứ 5","s9":{"sl":96,"moi":65,"cu":35,"tk":225},"s12":{"sl":123,"moi":80,"cu":20,"tk":348},"s19":{"sl":28,"moi":70,"cu":30,"tk":112},"totHSSV":247,"totKhach":685},{"date":"12/06/2026","thu":"Thứ 6","s9":{"sl":124,"moi":40,"cu":60,"tk":300},"s12":{"sl":171,"moi":55,"cu":45,"tk":405},"s19":{"sl":24,"moi":65,"cu":35,"tk":178},"totHSSV":319,"totKhach":883},{"date":"15/06/2026","thu":"Thứ 2","s9":{"sl":124,"moi":55,"cu":45,"tk":330},"s12":{"sl":136,"moi":40,"cu":60,"tk":283},"s19":{"sl":12,"moi":50,"cu":50,"tk":111},"totHSSV":272,"totKhach":724},{"date":"16/06/2026","thu":"Thứ 3","s9":{"sl":98,"moi":65,"cu":35,"tk":245},"s12":{"sl":126,"moi":80,"cu":20,"tk":350},"s19":{"sl":37,"moi":65,"cu":35,"tk":110},"totHSSV":261,"totKhach":705},{"date":"17/06/2026","thu":"Thứ 4","s9":{"sl":118,"moi":50,"cu":50,"tk":311},"s12":{"sl":142,"moi":75,"cu":25,"tk":269},"s19":{"sl":20,"moi":60,"cu":40,"tk":155},"totHSSV":280,"totKhach":735},{"date":"18/06/2026","thu":"Thứ 5","s9":{"sl":107,"moi":45,"cu":55,"tk":268},"s12":{"sl":132,"moi":65,"cu":35,"tk":296},"s19":{"sl":32,"moi":70,"cu":30,"tk":114},"totHSSV":271,"totKhach":678},{"date":"19/06/2026","thu":"Thứ 6","s9":{"sl":109,"moi":60,"cu":40,"tk":260},"s12":{"sl":189,"moi":60,"cu":40,"tk":490},"s19":{"sl":32,"moi":65,"cu":35,"tk":197},"totHSSV":330,"totKhach":947},{"date":"22/06/2026","thu":"Thứ 2","s9":{"sl":144,"moi":70,"cu":30,"tk":284},"s12":{"sl":110,"moi":50,"cu":50,"tk":290},"s19":{"sl":12,"moi":70,"cu":30,"tk":146},"totHSSV":266,"totKhach":720},{"date":"23/06/2026","thu":"Thứ 3","s9":{"sl":126,"moi":60,"cu":null,"tk":300},"s12":{"sl":154,"moi":60,"cu":40,"tk":385},"s19":{"sl":23,"moi":80,"cu":20,"tk":136},"totHSSV":303,"totKhach":821},{"date":"24/06/2026","thu":"Thứ 4","s9":{"sl":143,"moi":50,"cu":50,"tk":283},"s12":{"sl":142,"moi":80,"cu":20,"tk":362},"s19":{"sl":40,"moi":85,"cu":15,"tk":172},"totHSSV":325,"totKhach":817},{"date":"25/06/2026","thu":"Thứ 5","s9":{"sl":166,"moi":55,"cu":45,"tk":299},"s12":{"sl":197,"moi":75,"cu":25,"tk":396},"s19":{"sl":31,"moi":50,"cu":50,"tk":142},"totHSSV":394,"totKhach":837},{"date":"26/06/2026","thu":"Thứ 6","s9":{"sl":204,"moi":35,"cu":65,"tk":400},"s12":{"sl":174,"moi":80,"cu":20,"tk":301},"s19":{"sl":72,"moi":65,"cu":35,"tk":310},"totHSSV":450,"totKhach":1011},{"date":"04/04/2026","thu":"Thứ 7","s9":{"sl":null,"moi":null,"cu":null,"tk":null},"s12":{"sl":null,"moi":null,"cu":null,"tk":0},"s19":{"sl":null,"moi":null,"cu":null,"tk":0},"totHSSV":null,"totKhach":null},{"date":"05/04/2026","thu":"Chủ Nhật","s9":{"sl":null,"moi":null,"cu":null,"tk":null},"s12":{"sl":null,"moi":null,"cu":null,"tk":0},"s19":{"sl":null,"moi":null,"cu":null,"tk":0},"totHSSV":null,"totKhach":null},{"date":"29/06/2026","thu":"Thứ 2","s9":{"sl":273,"moi":80,"cu":20,"tk":426},"s12":{"sl":209,"moi":90,"cu":10,"tk":474},"s19":{"sl":73,"moi":70,"cu":30,"tk":137},"totHSSV":555,"totKhach":1037},{"date":"30/06/2026","thu":"Thứ 3","s9":{"sl":194,"moi":75,"cu":25,"tk":465},"s12":{"sl":155,"moi":70,"cu":30,"tk":343},"s19":{"sl":75,"moi":80,"cu":20,"tk":169},"totHSSV":424,"totKhach":977}],"T7":[{"date":"01/07/2026","thu":"Thứ 4","s9":{"sl":52,"moi":70,"cu":30,"tk":255},"s12":{"sl":210,"moi":80,"cu":20,"tk":420},"s19":{"sl":16,"moi":70,"cu":30,"tk":197},"totHSSV":278,"totKhach":872},{"date":"02/07/2026","thu":"Thứ 5","s9":{"sl":98,"moi":50,"cu":50,"tk":266},"s12":{"sl":196,"moi":70,"cu":30,"tk":374},"s19":{"sl":109,"moi":60,"cu":40,"tk":113},"totHSSV":403,"totKhach":753},{"date":"03/07/2026","thu":"Thứ 6","s9":{"sl":85,"moi":65,"cu":35,"tk":274},"s12":{"sl":229,"moi":80,"cu":20,"tk":478},"s19":{"sl":94,"moi":80,"cu":20,"tk":162},"totHSSV":408,"totKhach":914},{"date":"06/07/2026","thu":"Thứ 2","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"07/07/2026","thu":"Thứ 3","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"08/07/2026","thu":"Thứ 4","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"09/07/2026","thu":"Thứ 5","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"10/07/2026","thu":"Thứ 6","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"13/07/2026","thu":"Thứ 2","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"14/07/2026","thu":"Thứ 3","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"15/07/2026","thu":"Thứ 4","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"16/07/2026","thu":"Thứ 5","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"17/07/2026","thu":"Thứ 6","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"20/07/2026","thu":"Thứ 2","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"21/07/2026","thu":"Thứ 3","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"22/07/2026","thu":"Thứ 4","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"23/07/2026","thu":"Thứ 5","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"24/07/2026","thu":"Thứ 6","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"27/07/2026","thu":"Thứ 2","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"28/07/2026","thu":"Thứ 3","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"29/07/2026","thu":"Thứ 4","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"30/07/2026","thu":"Thứ 5","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0},{"date":"31/07/2026","thu":"Thứ 6","s9":{"sl":null,"moi":null,"cu":100,"tk":null},"s12":{"sl":null,"moi":null,"cu":100,"tk":0},"s19":{"sl":null,"moi":null,"cu":100,"tk":0},"totHSSV":0,"totKhach":0}]},"promo":{"T6":{"price":110,"rows":[{"date":"01/06/2026","thu":"Thứ 4","sl":null,"moi":null,"cu":100,"tk":872},{"date":"02/06/2026","thu":"Thứ 5","sl":33,"moi":null,"cu":100,"tk":null},{"date":"03/06/2026","thu":"Thứ 6","sl":46,"moi":null,"cu":100,"tk":null},{"date":"04/06/2026","thu":"Thứ 7","sl":null,"moi":null,"cu":null,"tk":null},{"date":"05/06/2026","thu":"Chủ Nhật","sl":null,"moi":null,"cu":null,"tk":null},{"date":"06/06/2026","thu":"Thứ 2","sl":78,"moi":null,"cu":100,"tk":null},{"date":"07/06/2026","thu":"Thứ 3","sl":54,"moi":null,"cu":100,"tk":null},{"date":"08/06/2026","thu":"Thứ 4","sl":50,"moi":null,"cu":100,"tk":null},{"date":"09/06/2026","thu":"Thứ 5","sl":32,"moi":null,"cu":100,"tk":null},{"date":"10/06/2026","thu":"Thứ 6","sl":56,"moi":null,"cu":100,"tk":null},{"date":"11/06/2026","thu":"Thứ 7","sl":35,"moi":null,"cu":null,"tk":null},{"date":"12/06/2026","thu":"Chủ Nhật","sl":47,"moi":null,"cu":null,"tk":null},{"date":"13/06/2026","thu":"Thứ 2","sl":45,"moi":null,"cu":100,"tk":null},{"date":"14/06/2026","thu":"Thứ 3","sl":77,"moi":null,"cu":100,"tk":null},{"date":"15/06/2026","thu":"Thứ 4","sl":34,"moi":null,"cu":100,"tk":null},{"date":"16/06/2026","thu":"Thứ 5","sl":36,"moi":null,"cu":100,"tk":null},{"date":"17/06/2026","thu":"Thứ 6","sl":50,"moi":null,"cu":100,"tk":null},{"date":"18/06/2026","thu":"Thứ 7","sl":28,"moi":null,"cu":null,"tk":null},{"date":"19/06/2026","thu":"Chủ Nhật","sl":68,"moi":null,"cu":null,"tk":null},{"date":"20/06/2026","thu":"Thứ 2","sl":null,"moi":null,"cu":100,"tk":null},{"date":"21/06/2026","thu":"Thứ 3","sl":null,"moi":null,"cu":100,"tk":null},{"date":"22/06/2026","thu":"Thứ 4","sl":null,"moi":null,"cu":100,"tk":null},{"date":"23/06/2026","thu":"Thứ 5","sl":null,"moi":null,"cu":100,"tk":null},{"date":"24/06/2026","thu":"Thứ 6","sl":null,"moi":null,"cu":100,"tk":null},{"date":"25/06/2026","thu":"Thứ 7","sl":null,"moi":null,"cu":null,"tk":null},{"date":"26/06/2026","thu":"Chủ Nhật","sl":null,"moi":null,"cu":null,"tk":null},{"date":"27/06/2026","thu":"Thứ 2","sl":null,"moi":null,"cu":100,"tk":null},{"date":"28/06/2026","thu":"Thứ 3","sl":null,"moi":null,"cu":100,"tk":null},{"date":"29/06/2026","thu":"Thứ 4","sl":null,"moi":null,"cu":100,"tk":null},{"date":"30/06/2026","thu":"Thứ 5","sl":null,"moi":null,"cu":100,"tk":null}]},"T7":{"price":139,"rows":[{"date":"01/07/2026","thu":"Thứ 4","sl":37,"moi":10,"cu":90,"tk":872},{"date":"02/07/2026","thu":"Thứ 5","sl":45,"moi":10,"cu":90,"tk":753},{"date":"03/07/2026","thu":"Thứ 6","sl":51,"moi":50,"cu":50,"tk":914},{"date":"04/07/2026","thu":"Thứ 7","sl":null,"moi":null,"cu":100,"tk":null},{"date":"05/07/2026","thu":"Chủ Nhật","sl":null,"moi":null,"cu":100,"tk":null},{"date":"06/07/2026","thu":"Thứ 2","sl":null,"moi":null,"cu":100,"tk":null},{"date":"07/07/2026","thu":"Thứ 3","sl":null,"moi":null,"cu":100,"tk":null},{"date":"08/07/2026","thu":"Thứ 4","sl":null,"moi":null,"cu":100,"tk":null},{"date":"09/07/2026","thu":"Thứ 5","sl":null,"moi":null,"cu":100,"tk":null},{"date":"10/07/2026","thu":"Thứ 6","sl":null,"moi":null,"cu":100,"tk":null},{"date":"11/07/2026","thu":"Thứ 7","sl":null,"moi":null,"cu":100,"tk":null},{"date":"12/07/2026","thu":"Chủ Nhật","sl":null,"moi":null,"cu":100,"tk":null},{"date":"13/07/2026","thu":"Thứ 2","sl":null,"moi":null,"cu":100,"tk":null},{"date":"14/07/2026","thu":"Thứ 3","sl":null,"moi":null,"cu":100,"tk":null},{"date":"15/07/2026","thu":"Thứ 4","sl":null,"moi":null,"cu":100,"tk":null},{"date":"16/07/2026","thu":"Thứ 5","sl":null,"moi":null,"cu":100,"tk":null},{"date":"17/07/2026","thu":"Thứ 6","sl":null,"moi":null,"cu":100,"tk":null},{"date":"18/07/2026","thu":"Thứ 7","sl":null,"moi":null,"cu":100,"tk":null},{"date":"19/07/2026","thu":"Chủ Nhật","sl":null,"moi":null,"cu":100,"tk":null},{"date":"20/07/2026","thu":"Thứ 2","sl":null,"moi":null,"cu":100,"tk":null},{"date":"21/07/2026","thu":"Thứ 3","sl":null,"moi":null,"cu":100,"tk":null},{"date":"22/07/2026","thu":"Thứ 4","sl":null,"moi":null,"cu":100,"tk":null},{"date":"23/07/2026","thu":"Thứ 5","sl":null,"moi":null,"cu":100,"tk":null},{"date":"24/07/2026","thu":"Thứ 6","sl":null,"moi":null,"cu":100,"tk":null},{"date":"25/07/2026","thu":"Thứ 7","sl":null,"moi":null,"cu":100,"tk":null},{"date":"26/07/2026","thu":"Chủ Nhật","sl":null,"moi":null,"cu":100,"tk":null},{"date":"27/07/2026","thu":"Thứ 2","sl":null,"moi":null,"cu":100,"tk":null},{"date":"28/07/2026","thu":"Thứ 3","sl":null,"moi":null,"cu":100,"tk":null},{"date":"29/07/2026","thu":"Thứ 4","sl":null,"moi":null,"cu":100,"tk":null},{"date":"30/07/2026","thu":"Thứ 5","sl":null,"moi":null,"cu":100,"tk":null},{"date":"31/07/2026","thu":"Thứ 6","sl":null,"moi":null,"cu":100,"tk":null}]}}};
+  // ---- data layer ----
+  function load(){try{var r=localStorage.getItem(STORE_KEY);if(r)return JSON.parse(r);}catch(e){}return null;}
+  function saveAll(d){localStorage.setItem(STORE_KEY,JSON.stringify(d));}
+  function ensureSeed(){
+    var d=load();
+    if(d&&d.__seeded) return d;
+    var base={__seeded:true,hssv:JSON.parse(JSON.stringify(SEED.hssv)),promo:JSON.parse(JSON.stringify(SEED.promo))};
+    saveAll(base); return base;
+  }
+  function toISO(dmy){var m=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dmy);return m?m[3]+'-'+m[2]+'-'+m[1]:dmy;}
+  function fromISO(iso){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);return m?m[3]+'/'+m[2]+'/'+m[1]:iso;}
+  function thuOf(iso){var d=new Date(iso+'T00:00:00');var names=['Chủ nhật','Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7'];return names[d.getDay()];}
+  function monthKeyOf(iso){var m=/^\d{4}-(\d{2})/.exec(iso);return m?('T'+parseInt(m[1],10)):'';}
+
+  // ---- UI injection ----
+  function injectTab(){
+    if(document.getElementById('tabCtkmNum')) return;
+    var bar=document.querySelector('.tabs'); if(!bar) return;
+    var b=document.createElement('button');
+    b.id='tabCtkmNum'; b.className='tab'; b.textContent='Số liệu CTKM';
+    b.onclick=function(){showCN();};
+    bar.appendChild(b);
+  }
+  function injectWrap(){
+    if(document.getElementById('ctkmNumWrap')) return;
+    var w=document.createElement('div'); w.id='ctkmNumWrap';
+    document.body.insertBefore(w, document.getElementById('scrim')||null);
+    renderForm(w);
+  }
+  var VIEW_IDS=['board','tableWrap','displayWrap','promoWrap'];
+  var TAB_IDS=['tabPosm','tabDisp','tabPromo','tabTable'];
+  function showCN(){
+    VIEW_IDS.forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});
+    TAB_IDS.forEach(function(id){var e=document.getElementById(id);if(e)e.classList.remove('on');});
+    var w=document.getElementById('ctkmNumWrap'); if(w)w.style.display='block';
+    var t=document.getElementById('tabCtkmNum'); if(t)t.classList.add('on');
+  }
+  // when other tabs clicked, hide our view (wrap switchView)
+  function hookSwitch(){
+    if(window.__cnHooked) return; window.__cnHooked=true;
+    var orig=window.switchView;
+    if(typeof orig==='function'){
+      window.switchView=function(v){
+        var w=document.getElementById('ctkmNumWrap'); if(w)w.style.display='none';
+        var t=document.getElementById('tabCtkmNum'); if(t)t.classList.remove('on');
+        return orig.apply(this,arguments);
+      };
+    }
+  }
+
+  var SLOTS=[{k:'s9',label:'9h-11h'},{k:'s12',label:'12h-19h'},{k:'s19',label:'19h-24h'}];
+  function renderForm(w){
+    var monthOpts=['T5','T6','T7'].map(function(m){return '<option value="'+m+'">Tháng '+m.slice(1)+'</option>';}).join('');
+    var slotHTML=SLOTS.map(function(s){
+      return '<div class="cn-slot"><div class="cn-st">Khung '+s.label+'</div><div class="cn-row">'
+        +'<div class="cn-f"><label>Số HSSV</label><input type="number" id="f_'+s.k+'_sl" min="0"></div>'
+        +'<div class="cn-f"><label>% Mới</label><input type="number" id="f_'+s.k+'_moi" min="0" max="100"></div>'
+        +'<div class="cn-f"><label>% Cũ</label><input type="number" id="f_'+s.k+'_cu" min="0" max="100"></div>'
+        +'<div class="cn-f"><label>Tổng khách</label><input type="number" id="f_'+s.k+'_tk" min="0"></div>'
+        +'</div></div>';
+    }).join('');
+    w.innerHTML=''
+      +'<div class="cn-card"><h3 class="cn-h">Nhập số liệu HSSV theo ngày</h3>'
+      +'<div class="cn-row">'
+      +'<div class="cn-f"><label>Tháng</label><select id="f_month">'+monthOpts+'</select></div>'
+      +'<div class="cn-f"><label>Ngày</label><input type="date" id="f_date"></div>'
+      +'<div class="cn-f"><label>Thứ</label><input type="text" id="f_thu" readonly style="width:90px;background:#f3f4f6"></div>'
+      +'</div>'
+      + slotHTML
+      +'<div class="cn-row" style="margin-top:12px">'
+      +'<button class="cn-btn" id="f_save">Lưu ngày này</button>'
+      +'<button class="cn-btn sec" id="f_clear">Xoá form</button>'
+      +'<span class="cn-hint" id="f_msg"></span>'
+      +'</div></div>'
+      +'<div class="cn-card"><h3 class="cn-h">Nhập số liệu Chương trình tối (139k/110k)</h3>'
+      +'<div class="cn-row">'
+      +'<div class="cn-f"><label>Tháng</label><select id="p_month"><option value="T6">Tháng 6 (110k)</option><option value="T7">Tháng 7 (139k)</option></select></div>'
+      +'<div class="cn-f"><label>Ngày</label><input type="date" id="p_date"></div>'
+      +'<div class="cn-f"><label>Thứ</label><input type="text" id="p_thu" readonly style="width:90px;background:#f3f4f6"></div>'
+      +'</div>'
+      +'<div class="cn-slot"><div class="cn-st">Khung 21h-24h</div><div class="cn-row">'
+      +'<div class="cn-f"><label>Số khách gói</label><input type="number" id="p_sl" min="0"></div>'
+      +'<div class="cn-f"><label>% Mới</label><input type="number" id="p_moi" min="0" max="100"></div>'
+      +'<div class="cn-f"><label>% Cũ</label><input type="number" id="p_cu" min="0" max="100"></div>'
+      +'<div class="cn-f"><label>Tổng khách</label><input type="number" id="p_tk" min="0"></div>'
+      +'</div></div>'
+      +'<div class="cn-row" style="margin-top:12px">'
+      +'<button class="cn-btn" id="p_save">Lưu ngày này</button>'
+      +'<button class="cn-btn sec" id="p_clear">Xoá form</button>'
+      +'<span class="cn-hint" id="p_msg"></span>'
+      +'</div></div>';
+    wireForm();
+  }
+  function gv(id){var e=document.getElementById(id);if(!e)return null;var v=e.value;if(v==='')return null;var n=parseFloat(v);return isNaN(n)?null:n;}
+  function sv(id,val){var e=document.getElementById(id);if(e)e.value=(val==null?'':val);}
+  function wireForm(){
+    var fdate=document.getElementById('f_date');
+    fdate.addEventListener('change',function(){document.getElementById('f_thu').value=fdate.value?thuOf(fdate.value):'';loadDayIntoForm();});
+    document.getElementById('f_month').addEventListener('change',loadDayIntoForm);
+    document.getElementById('f_save').onclick=saveHSSV;
+    document.getElementById('f_clear').onclick=function(){SLOTS.forEach(function(s){['sl','moi','cu','tk'].forEach(function(k){sv('f_'+s.k+'_'+k,'');});});document.getElementById('f_msg').textContent='';};
+    var pdate=document.getElementById('p_date');
+    pdate.addEventListener('change',function(){document.getElementById('p_thu').value=pdate.value?thuOf(pdate.value):'';loadPromoIntoForm();});
+    document.getElementById('p_month').addEventListener('change',loadPromoIntoForm);
+    document.getElementById('p_save').onclick=savePromo;
+    document.getElementById('p_clear').onclick=function(){['sl','moi','cu','tk'].forEach(function(k){sv('p_'+k,'');});document.getElementById('p_msg').textContent='';};
+  }
+  function loadDayIntoForm(){
+    var d=ensureSeed(); var mon=document.getElementById('f_month').value; var iso=document.getElementById('f_date').value; if(!iso)return;
+    var dmy=fromISO(iso); var arr=(d.hssv[mon]||[]); var rec=arr.find(function(r){return r.date===dmy;});
+    SLOTS.forEach(function(s){var o=rec?rec[s.k]:null;sv('f_'+s.k+'_sl',o?o.sl:'');sv('f_'+s.k+'_moi',o?o.moi:'');sv('f_'+s.k+'_cu',o?o.cu:'');sv('f_'+s.k+'_tk',o?o.tk:'');});
+    document.getElementById('f_msg').textContent=rec?'Đã có dữ liệu ngày này (sửa & lưu để cập nhật).':'Ngày mới.';
+  }
+  function saveHSSV(){
+    var d=ensureSeed(); var mon=document.getElementById('f_month').value; var iso=document.getElementById('f_date').value;
+    if(!iso){document.getElementById('f_msg').textContent='Chọn ngày trước.';return;}
+    var dmy=fromISO(iso); var thu=thuOf(iso);
+    var rec={date:dmy,thu:thu};
+    var totH=0,totK=0;
+    SLOTS.forEach(function(s){var o={sl:gv('f_'+s.k+'_sl'),moi:gv('f_'+s.k+'_moi'),cu:gv('f_'+s.k+'_cu'),tk:gv('f_'+s.k+'_tk')};rec[s.k]=o;totH+=o.sl||0;totK+=o.tk||0;});
+    rec.totHSSV=totH||null; rec.totKhach=totK||null;
+    if(!d.hssv[mon])d.hssv[mon]=[];
+    var arr=d.hssv[mon]; var i=arr.findIndex(function(r){return r.date===dmy;});
+    if(i>=0)arr[i]=rec; else arr.push(rec);
+    arr.sort(function(a,b){return toISO(a.date)<toISO(b.date)?-1:1;});
+    saveAll(d);
+    document.getElementById('f_msg').textContent='Đã lưu '+dmy+' (Tổng HSSV: '+(totH||0)+', Tổng khách: '+(totK||0)+').';
+  }
+  function loadPromoIntoForm(){
+    var d=ensureSeed(); var mon=document.getElementById('p_month').value; var iso=document.getElementById('p_date').value; if(!iso)return;
+    var dmy=fromISO(iso); var blk=d.promo[mon]; var arr=(blk&&blk.rows)||[]; var rec=arr.find(function(r){return r.date===dmy;});
+    sv('p_sl',rec?rec.sl:'');sv('p_moi',rec?rec.moi:'');sv('p_cu',rec?rec.cu:'');sv('p_tk',rec?rec.tk:'');
+    document.getElementById('p_msg').textContent=rec?'Đã có dữ liệu ngày này.':'Ngày mới.';
+  }
+  function savePromo(){
+    var d=ensureSeed(); var mon=document.getElementById('p_month').value; var iso=document.getElementById('p_date').value;
+    if(!iso){document.getElementById('p_msg').textContent='Chọn ngày trước.';return;}
+    var dmy=fromISO(iso); var thu=thuOf(iso);
+    var rec={date:dmy,thu:thu,sl:gv('p_sl'),moi:gv('p_moi'),cu:gv('p_cu'),tk:gv('p_tk')};
+    if(!d.promo[mon])d.promo[mon]={price:(mon==='T7'?139:110),rows:[]};
+    var arr=d.promo[mon].rows; var i=arr.findIndex(function(r){return r.date===dmy;});
+    if(i>=0)arr[i]=rec; else arr.push(rec);
+    arr.sort(function(a,b){return toISO(a.date)<toISO(b.date)?-1:1;});
+    saveAll(d);
+    document.getElementById('p_msg').textContent='Đã lưu '+dmy+'.';
+  }
+
+  // expose
+  window.CTKMNUM={ensureSeed:ensureSeed,load:load,saveAll:saveAll,SEED:SEED,showCN:showCN,STORE_KEY:STORE_KEY};
+
+  function init(){injectTab();injectWrap();hookSwitch();ensureSeed();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+
 </body>
 </html>
