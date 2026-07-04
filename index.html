@@ -2453,6 +2453,78 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
   else startObs();
 })();
 </script>
+<script id="posm-enh-mention">
+(function(){
+  'use strict';
+  function myU(){ try{ var s=(typeof curUserObj==='function')?curUserObj():null; return s&&s.u; }catch(e){ return null; } }
+  function taskLabel(id){ try{ return (typeof taskLabel==='function')?taskLabel(id):id; }catch(e){ return id; } }
+  function whoBy(){ try{ return (typeof cmtUser==='function')?cmtUser():myU(); }catch(e){ return myU(); } }
+  function getTask(id){
+    try{ if(typeof store!=='undefined'&&store&&store.tasks&&store.tasks[id]) return store.tasks[id]; }catch(e){}
+    try{ if(typeof data!=='undefined'&&Array.isArray(data)){ for(var i=0;i<data.length;i++) if(data[i]&&String(data[i].id)===String(id)) return data[i]; } }catch(e){}
+    return null;
+  }
+  function commentByCid(taskId, cid){
+    var tk=getTask(taskId);
+    if(tk&&Array.isArray(tk.comments)) for(var i=0;i<tk.comments.length;i++) if(String(tk.comments[i].cid)===String(cid)) return tk.comments[i];
+    try{ if(typeof data!=='undefined'&&Array.isArray(data)) for(var j=0;j<data.length;j++){ var cs=data[j]&&data[j].comments; if(Array.isArray(cs)) for(var k=0;k<cs.length;k++) if(String(cs[k].cid)===String(cid)) return cs[k]; } }catch(e){}
+    return null;
+  }
+  function detectMentions(text){
+    var res=[]; if(!text) return res;
+    var accs=null; try{ if(typeof ACCOUNTS!=='undefined'&&Array.isArray(ACCOUNTS)) accs=ACCOUNTS; }catch(e){}
+    if(!accs) return res;
+    var low=String(text).toLowerCase();
+    var nick=(typeof nicknames!=='undefined'&&nicknames)?__nicknames:{};
+    function isWord(ch){ return ch && /[0-9A-Za-zÀ-ỹ_]/.test(ch); }
+    accs.forEach(function(a){
+      if(!a||!a.u) return;
+      var labels=[a.name, nick[a.u], a.u].filter(Boolean).map(function(x){return String(x).toLowerCase();});
+      labels.sort(function(x,y){return y.length-x.length;});
+      for(var li=0; li<labels.length; li++){
+        var needle='@'+labels[li], from=0, pos;
+        while((pos=low.indexOf(needle, from))>=0){
+          if(!isWord(low.charAt(pos+needle.length))){ if(res.indexOf(a.u)<0) res.push(a.u); return; }
+          from=pos+1;
+        }
+      }
+    });
+    return res;
+  }
+  function ensureMentionActs(id){
+    var pend=null; try{ if(typeof pendingActs!=='undefined'&&Array.isArray(pendingActs)) pend=__pendingActs; }catch(e){}
+    if(!pend) return;
+    var me=myU(), changed=false;
+    for(var i=0;i<pend.length;i++){ var a=pend[i];
+      if(a&&a.type==='mention'&&a.cid){ var c=commentByCid(a.taskId||a.id||id, a.cid);
+        if(c){ var to=detectMentions(c.text||'').filter(function(u){return u&&u!==me;}); if(to.length){ a.to=to; changed=true; } } }
+    }
+    var tk=getTask(id), last=(tk&&Array.isArray(tk.comments)&&tk.comments.length)?tk.comments[tk.comments.length-1]:null;
+    if(last){
+      var to2=detectMentions(last.text||'').filter(function(u){return u&&u!==me;});
+      if(to2.length && !pend.some(function(a){return a&&a.type==='mention'&&String(a.cid)===String(last.cid);})){
+        pend.push({ type:'mention', id:id, taskId:id, cid:last.cid, to:to2, name:taskLabel(id), by:whoBy(), at:Date.now() });
+        changed=true;
+      }
+    }
+    if(changed){ try{ if(typeof renderNotif==='function') renderNotif(); }catch(e){} }
+  }
+  function wrap(){
+    if(typeof window.cmtSend!=='function'||window.cmtSend.__mfix) return false;
+    var orig=window.cmtSend;
+    window.cmtSend=function(id){
+      var r=orig.apply(this, arguments);
+      try{
+        ensureMentionActs(id);
+        setTimeout(function(){ try{ if(typeof pendingActs!=='undefined'&&pendingActs.some(function(a){return a&&a.type==='mention';})){ if(typeof queuePush==='function') queuePush(id); } }catch(e){} }, 1000);
+      }catch(e){}
+      return r;
+    };
+    window.cmtSend.__mfix=true; return true;
+  }
+  if(!wrap()){ var n=0, iv=setInterval(function(){ if(wrap()||++n>40) clearInterval(iv); }, 250); }
+})();
+</script>
 
 </body>
 </html>
