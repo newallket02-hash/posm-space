@@ -2704,5 +2704,114 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
 })();
 </script>
 
+<style id="ctkm-table-css">
+#ctkmNumWrap .cn-table{border-collapse:collapse;font-size:13px;min-width:100%}
+#ctkmNumWrap .cn-table th,#ctkmNumWrap .cn-table td{border:1px solid #e5e7eb;padding:5px 8px;text-align:center;white-space:nowrap}
+#ctkmNumWrap .cn-table thead th{background:#f3f4f6;font-weight:700;position:sticky;top:0}
+#ctkmNumWrap .cn-table tbody tr:nth-child(even){background:#fafafa}
+#ctkmNumWrap .cn-copyrow{background:#eef2ff;color:#2563eb;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600}
+#ctkmNumWrap .cn-copyrow:hover{background:#e0e7ff}
+</style>
+<script id="ctkm-table-js">
+(function(){
+  'use strict';
+  function api(){return window.CTKMNUM;}
+  var SLOTS=[{k:'s9',label:'9h-11h'},{k:'s12',label:'12h-19h'},{k:'s19',label:'19h-24h'}];
+  function toISO(dmy){var m=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dmy);return m?m[3]+'-'+m[2]+'-'+m[1]:dmy;}
+  function n(v){return (v==null||v==='')?'':v;}
+  function pct(v){return (v==null||v==='')?'':(v+'%');}
+
+  // HSSV copy line: Ngày, Thứ, per slot [HSSV,%Mới,%Cũ,TổngKhách], Tổng HSSV, Tổng Khách, Tỷ lệ
+  function hssvLine(r){
+    var cells=[r.date, r.thu];
+    SLOTS.forEach(function(s){var o=r[s.k]||{};cells.push(n(o.sl),pct(o.moi),pct(o.cu),n(o.tk));});
+    var ty=(r.totHSSV&&r.totKhach)?((r.totHSSV/r.totKhach*100).toFixed(1).replace('.',',')+'%'):'';
+    cells.push(n(r.totHSSV),n(r.totKhach),ty);
+    return cells.join('\t');
+  }
+  function promoLine(r){
+    var ty=(r.sl&&r.tk)?((r.sl/r.tk*100).toFixed(1).replace('.',',')+'%'):'';
+    return [r.date,r.thu,n(r.sl),pct(r.moi),pct(r.cu),n(r.tk),ty].join('\t');
+  }
+
+  function ensureTableUI(){
+    var wrap=document.getElementById('ctkmNumWrap'); if(!wrap) return;
+    if(document.getElementById('cnTableCard')) return;
+    var card=document.createElement('div'); card.className='cn-card'; card.id='cnTableCard';
+    card.innerHTML=''
+      +'<h3 class="cn-h">Bảng tổng hợp & Dòng copy</h3>'
+      +'<div class="cn-row" style="margin-bottom:10px">'
+      +'<div class="cn-f"><label>Chương trình</label><select id="t_prog"><option value="hssv">HSSV (theo khung giờ)</option><option value="promo">Chương trình tối (139k/110k)</option></select></div>'
+      +'<div class="cn-f"><label>Tháng</label><select id="t_month"></select></div>'
+      +'<button class="cn-btn sec" id="t_copyall" style="align-self:flex-end">Copy cả bảng</button>'
+      +'<span class="cn-hint" id="t_msg" style="align-self:flex-end"></span>'
+      +'</div>'
+      +'<div id="t_grid" style="overflow-x:auto"></div>';
+    wrap.appendChild(card);
+    document.getElementById('t_prog').addEventListener('change',fillMonths);
+    document.getElementById('t_month').addEventListener('change',renderTable);
+    document.getElementById('t_copyall').addEventListener('click',copyAll);
+    fillMonths();
+  }
+  function fillMonths(){
+    var prog=document.getElementById('t_prog').value;
+    var months = prog==='hssv'?['T5','T6','T7']:['T6','T7'];
+    var sel=document.getElementById('t_month');
+    sel.innerHTML=months.map(function(m){var lbl='Tháng '+m.slice(1);if(prog==='promo')lbl+=(m==='T7'?' (139k)':' (110k)');return '<option value="'+m+'">'+lbl+'</option>';}).join('');
+    renderTable();
+  }
+  function getRows(prog,mon){
+    var d=api().ensureSeed();
+    if(prog==='hssv')return (d.hssv[mon]||[]).slice();
+    var blk=d.promo[mon]; return (blk&&blk.rows||[]).slice();
+  }
+  function renderTable(){
+    var prog=document.getElementById('t_prog').value;
+    var mon=document.getElementById('t_month').value;
+    var rows=getRows(prog,mon).sort(function(a,b){return toISO(a.date)<toISO(b.date)?-1:1;});
+    var g=document.getElementById('t_grid');
+    var th;
+    if(prog==='hssv'){
+      th='<th>Ngày</th><th>Thứ</th>'+SLOTS.map(function(s){return '<th>'+s.label+' HSSV</th><th>%Mới</th><th>%Cũ</th><th>Tổng khách</th>';}).join('')+'<th>Tổng HSSV</th><th>Tổng khách</th><th>Copy</th>';
+    }else{
+      th='<th>Ngày</th><th>Thứ</th><th>Khách gói</th><th>%Mới</th><th>%Cũ</th><th>Tổng khách</th><th>Copy</th>';
+    }
+    var body=rows.map(function(r,i){
+      var tds;
+      if(prog==='hssv'){
+        tds='<td>'+r.date+'</td><td>'+(r.thu||'')+'</td>';
+        SLOTS.forEach(function(s){var o=r[s.k]||{};tds+='<td>'+n(o.sl)+'</td><td>'+pct(o.moi)+'</td><td>'+pct(o.cu)+'</td><td>'+n(o.tk)+'</td>';});
+        tds+='<td>'+n(r.totHSSV)+'</td><td>'+n(r.totKhach)+'</td>';
+      }else{
+        tds='<td>'+r.date+'</td><td>'+(r.thu||'')+'</td><td>'+n(r.sl)+'</td><td>'+pct(r.moi)+'</td><td>'+pct(r.cu)+'</td><td>'+n(r.tk)+'</td>';
+      }
+      tds+='<td><button class="cn-copyrow" data-i="'+i+'">Copy</button></td>';
+      return '<tr>'+tds+'</tr>';
+    }).join('');
+    g.innerHTML='<table class="cn-table"><thead><tr>'+th+'</tr></thead><tbody>'+body+'</tbody></table>';
+    window.__cnRows=rows; window.__cnProg=prog;
+    [].forEach.call(g.querySelectorAll('.cn-copyrow'),function(b){b.addEventListener('click',function(){copyRow(parseInt(b.getAttribute('data-i'),10),b);});});
+  }
+  function lineFor(r){return window.__cnProg==='hssv'?hssvLine(r):promoLine(r);}
+  function doCopy(text,cb){
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(cb,function(){fallback(text);cb();});}
+    else{fallback(text);cb();}
+  }
+  function fallback(text){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}ta.remove();}
+  function copyRow(i,btn){
+    var r=window.__cnRows[i]; if(!r)return;
+    doCopy(lineFor(r),function(){var o=btn.textContent;btn.textContent='Đã copy!';setTimeout(function(){btn.textContent=o;},1200);});
+  }
+  function copyAll(){
+    var rows=window.__cnRows||[]; if(!rows.length){document.getElementById('t_msg').textContent='Chưa có dữ liệu.';return;}
+    var text=rows.map(lineFor).join('\n');
+    doCopy(text,function(){document.getElementById('t_msg').textContent='Đã copy '+rows.length+' dòng (dán vào Sheet/Excel).';});
+  }
+  window.CTKMTABLE={render:renderTable, hssvLine:hssvLine, promoLine:promoLine};
+  function init(){ensureTableUI();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+
 </body>
 </html>
