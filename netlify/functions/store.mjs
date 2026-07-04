@@ -5,6 +5,7 @@ export default async (req) => {
   let board = (await store.get('board', { type: 'json' })) || { tasks: {} };
   if (!Array.isArray(board.activity)) board.activity = [];
   if (!board.nicknames || typeof board.nicknames !== 'object') board.nicknames = {};
+  if (!board.avatars || typeof board.avatars !== 'object') board.avatars = {};
 
   if (req.method === 'GET') {
     return new Response(JSON.stringify(board), {
@@ -17,6 +18,12 @@ export default async (req) => {
     try { body = await req.json(); } catch (e) {}
     (body.upsert || []).forEach((t) => { if (t && t.taskId) board.tasks[t.taskId] = t; });
     (body.delete || []).forEach((id) => { delete board.tasks[id]; });
+
+    // Avatar: luu anh dai dien theo user id  { type:'avatar', id, img }
+    if (body.type === 'avatar' && body.id) {
+      if (body.img) board.avatars[body.id] = body.img;
+      else delete board.avatars[body.id];
+    }
 
   // Ghi nhat ky hoat dong (ai sua ID nao, luc nao) - giu 30 muc gan nhat
   if (Array.isArray(body.activity) && body.activity.length) {
@@ -33,7 +40,7 @@ export default async (req) => {
 
   board.savedAt = new Date().toISOString();
     await store.setJSON('board', board);
-    return new Response(JSON.stringify({ ok: true, count: Object.keys(board.tasks).length, activity: board.activity, nicknames: board.nicknames }), {
+    return new Response(JSON.stringify({ ok: true, count: Object.keys(board.tasks).length, activity: board.activity, nicknames: board.nicknames, avatars: board.avatars }), {
       headers: { 'content-type': 'application/json' }
     });
   }
