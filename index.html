@@ -2322,5 +2322,137 @@ if(typeof pullShared==='function'){
 }
 try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
 </script>
+<style id="posm-enh-css">
+/* [3] Avatar canh nickname trong binh luan */
+.cmtHead{align-items:center!important}
+.cmtAva{width:24px;height:24px;border-radius:6px;flex:none;display:inline-flex;
+  align-items:center;justify-content:center;background-size:cover;background-position:center;
+  background-color:var(--gold-soft);color:var(--gold);font-weight:800;font-size:11px;
+  border:1px solid var(--line);overflow:hidden;line-height:1;text-transform:uppercase}
+/* [4] Modal cat/zoom avatar */
+#avaCropMask{position:fixed;inset:0;background:rgba(20,18,15,.55);z-index:9999;
+  display:flex;align-items:center;justify-content:center}
+#avaCropBox{background:#fff;border-radius:14px;padding:16px;width:280px;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+#avaCropBox h4{margin:0 0 10px;font-size:14px;font-weight:800;color:var(--ink)}
+#avaCropView{width:220px;height:220px;margin:0 auto;position:relative;overflow:hidden;
+  border-radius:16px;border:1px solid var(--line);background:#f0ece3;touch-action:none;cursor:grab}
+#avaCropView.drag{cursor:grabbing}
+#avaCropView img{position:absolute;left:0;top:0;user-select:none;-webkit-user-drag:none;pointer-events:none;max-width:none}
+#avaCropRow{display:flex;align-items:center;gap:8px;margin:12px 0 4px}
+#avaCropRow span{font-size:11px;color:var(--soft);font-weight:700}
+#avaCropZoom{flex:1}
+#avaCropBtns{display:flex;gap:8px;margin-top:12px}
+#avaCropBtns button{flex:1}
+</style>
+<script id="posm-enh-js">
+(function(){
+  'use strict';
+  var FRAME=220, OUT=200;
+
+  /* ===== [3] Avatar canh nickname ===== */
+  function findComment(cid){
+    try{
+      if(!Array.isArray(window.data)) return null;
+      for(var i=0;i<data.length;i++){
+        var cs=data[i]&&data[i].comments;
+        if(Array.isArray(cs)) for(var j=0;j<cs.length;j++)
+          if(cs[j]&&String(cs[j].cid)===String(cid)) return cs[j];
+      }
+    }catch(e){}
+    return null;
+  }
+  function authorInfo(by){
+    var acc=null; try{ if(typeof __accByAny==='function') acc=__accByAny(by); }catch(e){}
+    var name=by; try{ if(acc&&typeof __accName==='function') name=__accName(acc); }catch(e){}
+    var ukey=(acc&&acc.u)?acc.u:by;
+    var av=''; try{ if(typeof __avatarFor==='function') av=__avatarFor(ukey)||''; }catch(e){}
+    return {name:name||'?', av:av};
+  }
+  function paintAva(item){
+    var head=item.querySelector('.cmtHead'); if(!head) return;
+    var info=authorInfo((findComment(item.getAttribute('data-cid'))||{}).by);
+    var el=head.querySelector(':scope > .cmtAva');
+    if(!el){ el=document.createElement('span'); el.className='cmtAva'; head.insertBefore(el, head.firstChild); }
+    if(info.av){ el.style.backgroundImage='url("'+info.av+'")'; el.textContent=''; }
+    else { el.style.backgroundImage='none'; el.textContent=(info.name||'?').trim().charAt(0); }
+  }
+  function scanComments(root){ (root||document).querySelectorAll('.cmtItem[data-cid]').forEach(paintAva); }
+  var obs=new MutationObserver(function(muts){
+    for(var i=0;i<muts.length;i++){ var m=muts[i];
+      for(var j=0;j<m.addedNodes.length;j++){ var n=m.addedNodes[j]; if(n.nodeType!==1) continue;
+        if(n.classList&&n.classList.contains('cmtItem')) paintAva(n);
+        else if(n.querySelectorAll) scanComments(n);
+      }
+    }
+  });
+  function startObs(){ try{ obs.observe(document.body,{childList:true,subtree:true}); }catch(e){} scanComments(document); }
+  window.__refreshCmtAvatars=function(){ scanComments(document); };
+
+  /* ===== [4] Modal zoom/cat avatar ===== */
+  function openCrop(img, onDone){
+    var nw=img.naturalWidth, nh=img.naturalHeight, base=Math.max(FRAME/nw, FRAME/nh), zoom=1, tx=0, ty=0;
+    var mask=document.createElement('div'); mask.id='avaCropMask';
+    mask.innerHTML='<div id="avaCropBox"><h4>Cắt ảnh đại diện</h4><div id="avaCropView"></div>'
+      +'<div id="avaCropRow"><span>Zoom</span><input id="avaCropZoom" type="range" min="1" max="3" step="0.01" value="1"></div>'
+      +'<div id="avaCropBtns"><button class="btn" id="avaCropCancel">Huỷ</button><button class="btn primary" id="avaCropOk">Lưu</button></div></div>';
+    document.body.appendChild(mask);
+    var view=mask.querySelector('#avaCropView'); img.removeAttribute('style'); view.appendChild(img);
+    function clamp(){ var s=base*zoom, w=nw*s, h=nh*s;
+      if(tx>0)tx=0; if(ty>0)ty=0; if(tx<FRAME-w)tx=FRAME-w; if(ty<FRAME-h)ty=FRAME-h;
+      img.style.width=w+'px'; img.style.height=h+'px'; img.style.left=tx+'px'; img.style.top=ty+'px';
+    }
+    clamp();
+    var drag=false,px=0,py=0;
+    view.addEventListener('pointerdown',function(e){drag=true;px=e.clientX;py=e.clientY;view.classList.add('drag');view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',function(e){if(!drag)return;tx+=e.clientX-px;ty+=e.clientY-py;px=e.clientX;py=e.clientY;clamp();});
+    view.addEventListener('pointerup',function(){drag=false;view.classList.remove('drag');});
+    mask.querySelector('#avaCropZoom').addEventListener('input',function(e){
+      var nz=parseFloat(e.target.value), c=FRAME/2, r=(base*nz)/(base*zoom);
+      tx=c-(c-tx)*r; ty=c-(c-ty)*r; zoom=nz; clamp();
+    });
+    function close(){ try{mask.remove();}catch(e){} }
+    mask.querySelector('#avaCropCancel').addEventListener('click',close);
+    mask.addEventListener('click',function(e){ if(e.target===mask) close(); });
+    mask.querySelector('#avaCropOk').addEventListener('click',function(){
+      var s=base*zoom, sSize=FRAME/s, sx=-tx/s, sy=-ty/s;
+      var cv=document.createElement('canvas'); cv.width=OUT; cv.height=OUT;
+      var ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,OUT,OUT);
+      try{ ctx.drawImage(img, sx, sy, sSize, sSize, 0,0,OUT,OUT); }catch(e){}
+      close(); onDone(cv.toDataURL('image/jpeg',0.9));
+    });
+  }
+  window.openAvatarEditor=function(){
+    try{
+      var inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+      inp.addEventListener('change',function(){
+        var f=inp.files&&inp.files[0]; if(!f) return;
+        var r=new FileReader();
+        r.onload=function(){ var img=new Image();
+          img.onload=function(){ openCrop(img,function(out){
+            try{
+              var s=(typeof __curUserObj==='function')?__curUserObj():null;
+              if(s&&s.u){
+                if(typeof __avatars==='object'&&__avatars) __avatars[s.u]=out;
+                if(typeof __saveAvatar==='function') __saveAvatar();
+                if(typeof refreshMyAvatar==='function') refreshMyAvatar();
+                if(typeof __pushAvatarServer==='function') __pushAvatarServer(s.u,out);
+              }
+              if(typeof window.__refreshCmtAvatars==='function') window.__refreshCmtAvatars();
+              if(typeof toast==='function') toast('Đã cập nhật ảnh đại diện');
+            }catch(e){}
+          }); };
+          img.src=r.result;
+        };
+        r.readAsDataURL(f);
+      });
+      inp.click();
+    }catch(e){}
+  };
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',startObs);
+  else startObs();
+})();
+</script>
+
 </body>
 </html>
