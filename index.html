@@ -10,7 +10,7 @@
 <style>
 :root{
   --ink:#1d1c1a; --soft:#5b574f; --muted:#9a948a;
-  --paper:#f5f2ea; --card:#fff; --line:#e6e1d6; --line2:#efebe2;
+  --paper:#f5f2ea; --card:#fff; --line:#e6e1d6;h --line2:#efebe2;
   --gold:#b8893a; --gold-soft:#f3e9d6;
   --red:#d64545; --red-soft:#fcebe9;
   --amber:#d98322; --amber-soft:#fbf0dd;
@@ -944,7 +944,7 @@ async function saveAll(){
   catch(e){toast('Không lưu được lên web: '+(e.message||e));}
 }
 async function pullShared(silent){
-  try{const b=await apiGet();if(b&&b.tasks){mergeServer(b.tasks);save();render();}if(!silent)toast('Đã tải bản mới nhất');}
+  try{const b=await apiGet();if(b&&b.tasks){mergeServer(b.tasks);save();render();}if(b&&b.avatars&&typeof __applyServerAvatars==='function')__applyServerAvatars(b.avatars);if(!silent)toast('Đã tải bản mới nhất');}
   catch(e){if(!silent)toast('Không tải được: '+(e.message||e));}
 }
 function mergeServer(serverTasks){
@@ -957,6 +957,7 @@ async function initShared(){
     const b=await apiGet();
     if(b&&b.tasks&&Object.keys(b.tasks).length){mergeServer(b.tasks);save();}
     else{await apiPost({upsert:arr().filter(t=>!t.demo)});}   /* lần đầu: nạp seed lên web */
+    if(b&&b.avatars&&typeof __applyServerAvatars==='function') __applyServerAvatars(b.avatars);
   }catch(e){/* offline → dùng bản trong máy */}
   render();
 }
@@ -2352,7 +2353,7 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
   /* ===== [3] Avatar canh nickname ===== */
   function findComment(cid){
     try{
-      if(!Array.isArray(window.data)) return null;
+      var data=(typeof store!=='undefined'&&store&&store.tasks)?Object.keys(store.tasks).map(function(k){return store.tasks[k];}):(Array.isArray(window.data)?window.data:[]);
       for(var i=0;i<data.length;i++){
         var cs=data[i]&&data[i].comments;
         if(Array.isArray(cs)) for(var j=0;j<cs.length;j++)
