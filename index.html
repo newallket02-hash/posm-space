@@ -2760,7 +2760,7 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
   }
   function fillMonths(){
     var prog=document.getElementById('t_prog').value;
-    var months = prog==='hssv'?['T7','T6','T5']:['T7','T6'];
+    var months = prog==='hssv'?['T5','T6','T7']:['T6','T7'];
     var sel=document.getElementById('t_month');
     sel.innerHTML=months.map(function(m){var lbl='Tháng '+m.slice(1);if(prog==='promo')lbl+=(m==='T7'?' (139k)':' (110k)');return '<option value="'+m+'">'+lbl+'</option>';}).join('');
     var qn=document.getElementById('t_qnav');
@@ -2781,7 +2781,7 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
     var mon=document.getElementById('t_month').value;
     var __qn=document.getElementById('t_qnav');
     if(__qn){[].forEach.call(__qn.querySelectorAll('.cn-qbtn'),function(b){b.classList.toggle('active',b.getAttribute('data-m')===mon);});}
-    var rows=getRows(prog,mon).sort(function(a,b){return toISO(a.date)>toISO(b.date)?-1:1;});
+    var rows=getRows(prog,mon).sort(function(a,b){return toISO(a.date)<toISO(b.date)?-1:1;});
     var g=document.getElementById('t_grid');
     var th;
     if(prog==='hssv'){
@@ -2856,6 +2856,8 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
     if(metric==='totHSSV')return r.totHSSV;
     if(metric==='totKhach')return r.totKhach;
     if(metric==='rate')return (r.totHSSV&&r.totKhach)?(r.totHSSV/r.totKhach*100):null;
+    if(metric==='hssv_am')return (r.s9&&+r.s9.sl)||0;
+    if(metric==='hssv_rest')return ((r.s12&&+r.s12.sl)||0)+((r.s19&&+r.s19.sl)||0);
     // per-slot sl sum handled elsewhere
     return null;
   }
@@ -2886,7 +2888,7 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
   function fillMetric(){
     var prog=document.getElementById('d_prog').value;
     var opts = prog==='hssv'
-      ? [['totHSSV','Tổng HSSV/ngày'],['totKhach','Tổng khách/ngày'],['rate','Tỷ lệ HSSV (%)']]
+      ? [['totHSSV','Tổng HSSV/ngày'],['totKhach','Tổng khách/ngày'],['rate','Tỷ lệ HSSV (%)'],['hssv_am','HSSV khung 9h-12h'],['hssv_rest','HSSV khung giờ còn lại']]
       : [['sl','Số khách gói'],['tk','Tổng khách'],['moi','% Mới']];
     document.getElementById('d_metric').innerHTML=opts.map(function(o){return '<option value="'+o[0]+'">'+o[1]+'</option>';}).join('');
   }
