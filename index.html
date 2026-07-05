@@ -2711,6 +2711,10 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
 #ctkmNumWrap .cn-table tbody tr:nth-child(even){background:#fafafa}
 #ctkmNumWrap .cn-copyrow{background:#eef2ff;color:#2563eb;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600}
 #ctkmNumWrap .cn-copyrow:hover{background:#e0e7ff}
+#ctkmNumWrap .cn-qnav{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 10px}
+#ctkmNumWrap .cn-qbtn{background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px;font-weight:600}
+#ctkmNumWrap .cn-qbtn:hover{background:#e0e7ff}
+#ctkmNumWrap .cn-qbtn.active{background:#4f46e5;color:#fff;border-color:#4f46e5}
 </style>
 <script id="ctkm-table-js">
 (function(){
@@ -2746,6 +2750,7 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
       +'<button class="cn-btn sec" id="t_copyall" style="align-self:flex-end">Copy cả bảng</button>'
       +'<span class="cn-hint" id="t_msg" style="align-self:flex-end"></span>'
       +'</div>'
+      +'<div id="t_qnav" class="cn-qnav"></div>'
       +'<div id="t_grid" style="overflow-x:auto"></div>';
     wrap.appendChild(card);
     document.getElementById('t_prog').addEventListener('change',fillMonths);
@@ -2755,9 +2760,15 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
   }
   function fillMonths(){
     var prog=document.getElementById('t_prog').value;
-    var months = prog==='hssv'?['T5','T6','T7']:['T6','T7'];
+    var months = prog==='hssv'?['T7','T6','T5']:['T7','T6'];
     var sel=document.getElementById('t_month');
     sel.innerHTML=months.map(function(m){var lbl='Tháng '+m.slice(1);if(prog==='promo')lbl+=(m==='T7'?' (139k)':' (110k)');return '<option value="'+m+'">'+lbl+'</option>';}).join('');
+    var qn=document.getElementById('t_qnav');
+    if(qn){
+      var pfx=prog==='hssv'?'HSSV ':'CT ';
+      qn.innerHTML=months.map(function(m){return '<button type="button" class="cn-qbtn" data-m="'+m+'">'+pfx+m+'</button>';}).join('');
+      [].forEach.call(qn.querySelectorAll('.cn-qbtn'),function(b){b.addEventListener('click',function(){var s=document.getElementById('t_month');s.value=b.getAttribute('data-m');renderTable();});});
+    }
     renderTable();
   }
   function getRows(prog,mon){
@@ -2768,7 +2779,9 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
   function renderTable(){
     var prog=document.getElementById('t_prog').value;
     var mon=document.getElementById('t_month').value;
-    var rows=getRows(prog,mon).sort(function(a,b){return toISO(a.date)<toISO(b.date)?-1:1;});
+    var __qn=document.getElementById('t_qnav');
+    if(__qn){[].forEach.call(__qn.querySelectorAll('.cn-qbtn'),function(b){b.classList.toggle('active',b.getAttribute('data-m')===mon);});}
+    var rows=getRows(prog,mon).sort(function(a,b){return toISO(a.date)>toISO(b.date)?-1:1;});
     var g=document.getElementById('t_grid');
     var th;
     if(prog==='hssv'){
@@ -2818,6 +2831,14 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
 #ctkmNumWrap .cn-leg{font-size:12px;color:#444;display:flex;align-items:center;gap:5px}
 #ctkmNumWrap .cn-leg i{width:14px;height:3px;border-radius:2px;display:inline-block}
 #ctkmNumWrap #d_stat{margin-top:8px;font-weight:600;color:#111}
+#ctkmNumWrap .cn-pie-months{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+#ctkmNumWrap .cn-pbtn{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px;font-weight:600}
+#ctkmNumWrap .cn-pbtn:hover{background:#dcfce7}
+#ctkmNumWrap .cn-pbtn.active{background:#16a34a;color:#fff;border-color:#16a34a}
+#ctkmNumWrap .cn-pie-wrap{display:flex;gap:24px;flex-wrap:wrap;align-items:center}
+#ctkmNumWrap .cn-pie-legend{display:flex;flex-direction:column;gap:8px}
+#ctkmNumWrap .cn-pleg{font-size:13px;color:#333;display:flex;align-items:center;gap:8px}
+#ctkmNumWrap .cn-pleg i{width:14px;height:14px;border-radius:3px;display:inline-block}
 </style>
 <script id="ctkm-dash-js">
 (function(){
@@ -2855,6 +2876,7 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
       +'<div id="d_legend" class="cn-legend"></div>'
       +'<div id="d_stat" class="cn-hint"></div>';
     wrap.appendChild(card);
+    ensurePieUI();
     document.getElementById('d_prog').addEventListener('change',function(){fillMetric();fillMonth();draw();});
     document.getElementById('d_metric').addEventListener('change',draw);
     document.getElementById('d_mode').addEventListener('change',function(){toggleMonth();draw();});
@@ -2938,6 +2960,52 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
       if(a>0){var g=((b-a)/a*100);stat='Tổng '+series[0].name+': '+Math.round(a)+' → '+series[series.length-1].name+': '+Math.round(b)+' ('+(g>=0?'+':'')+g.toFixed(1)+'%)';}
     }
     document.getElementById('d_stat').textContent=stat;
+  }
+    var PIE_COLORS=['#4f46e5','#16a34a','#f59e0b'];
+  function pieMonths(){var d=api().ensureSeed();var out=[];['T5','T6','T7'].forEach(function(m){var has=(d.hssv[m]&&d.hssv[m].length)||(d.promo[m]&&d.promo[m].rows&&d.promo[m].rows.length);if(has)out.push(m);});return out;}
+  function computePie(mon){
+    var d=api().ensureSeed();
+    var hRows=d.hssv[mon]||[];
+    var hssv=0,guests=0;
+    hRows.forEach(function(r){hssv+=(+r.totHSSV||0);guests+=(+r.totKhach||0);});
+    var pBlk=d.promo[mon];var pRows=(pBlk&&pBlk.rows)||[];
+    var prog=0;pRows.forEach(function(r){prog+=(+r.sl||0);});
+    var khac=guests-hssv;if(khac<0)khac=0;
+    return [{name:'HSSV',value:hssv},{name:'Chương trình 139k',value:prog},{name:'Khác',value:khac}];
+  }
+  function drawPie(mon){
+    var host=document.getElementById('d_pie');if(!host)return;
+    var data=computePie(mon);var total=data.reduce(function(a,x){return a+x.value;},0);
+    var pm=document.getElementById('d_pieMonths');
+    if(pm){[].forEach.call(pm.querySelectorAll('.cn-pbtn'),function(b){b.classList.toggle('active',b.getAttribute('data-m')===mon);});}
+    if(!total){host.innerHTML='<div class="cn-hint" style="padding:16px">Chưa có dữ liệu để vẽ biểu đồ tròn.</div>';return;}
+    var cx=110,cy=110,r=100,ang=-Math.PI/2;var paths='';
+    data.forEach(function(seg,i){
+      if(!seg.value)return;var frac=seg.value/total;var a2=ang+frac*Math.PI*2;
+      var x1=cx+r*Math.cos(ang),y1=cy+r*Math.sin(ang);
+      var x2=cx+r*Math.cos(a2),y2=cy+r*Math.sin(a2);
+      var large=frac>0.5?1:0;
+      if(frac>=0.999){paths+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+PIE_COLORS[i]+'"></circle>';}
+      else{paths+='<path d="M'+cx+' '+cy+' L'+x1.toFixed(2)+' '+y1.toFixed(2)+' A'+r+' '+r+' 0 '+large+' 1 '+x2.toFixed(2)+' '+y2.toFixed(2)+' Z" fill="'+PIE_COLORS[i]+'"></path>';}
+      ang=a2;
+    });
+    var svg='<svg viewBox="0 0 220 220" style="width:220px;height:220px">'+paths+'<circle cx="'+cx+'" cy="'+cy+'" r="46" fill="#fff"></circle><text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" font-size="13" fill="#666">Tổng khách</text><text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" font-size="18" font-weight="700" fill="#111">'+total+'</text></svg>';
+    var legend='<div class="cn-pie-legend">'+data.map(function(seg,i){var p=total?(seg.value/total*100):0;return '<div class="cn-pleg"><i style="background:'+PIE_COLORS[i]+'"></i><span>'+seg.name+': <b>'+seg.value+'</b> ('+p.toFixed(1).replace('.',',')+'%)</span></div>';}).join('')+'</div>';
+    host.innerHTML='<div class="cn-pie-wrap">'+svg+legend+'</div>';
+  }
+  function ensurePieUI(){
+    var wrap=document.getElementById('ctkmNumWrap');if(!wrap)return;
+    if(document.getElementById('cnPieCard'))return;
+    var card=document.createElement('div');card.className='cn-card';card.id='cnPieCard';
+    var months=pieMonths();if(!months.length)months=['T7'];
+    var btns=months.map(function(m){return '<button type="button" class="cn-pbtn" data-m="'+m+'">Tháng '+m.slice(1)+'</button>';}).join('');
+    card.innerHTML='<h3 class="cn-h">Tỷ lệ khách theo nhóm (Biểu đồ tròn)</h3>'
+      +'<div id="d_pieMonths" class="cn-pie-months">'+btns+'</div>'
+      +'<div id="d_pie"></div>';
+    wrap.appendChild(card);
+    var def=months[months.length-1];
+    [].forEach.call(card.querySelectorAll('.cn-pbtn'),function(b){b.addEventListener('click',function(){drawPie(b.getAttribute('data-m'));});});
+    drawPie(def);
   }
   window.CTKMDASH={draw:draw};
   function init(){ensureDashUI();}
