@@ -3058,5 +3058,192 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
 
 <script id="ctkm-hide-promo">(function(){function h(){var t=document.getElementById("tabPromo");if(t)t.style.display="none";var w=document.getElementById("promoWrap");if(t&&t.classList.contains("on")){if(typeof window.switchView==="function"){try{window.switchView("posm");}catch(e){}}}if(w){w.style.display="none";}}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",h);else h();setTimeout(h,300);})();</script>
 
+
+<script id="cn-layout-export">
+(function(){
+  'use strict';
+  var WRAP='ctkmNumWrap';
+  var ORDER=['cnDashCard','cnPieCard','cnTableCard','cn-entry-hssv','cn-entry-promo'];
+
+  function cardKey(el){
+    if(el.id && ORDER.indexOf(el.id)>=0) return el.id;
+    if(el.classList){
+      if(el.classList.contains('cn-entry-hssv')) return 'cn-entry-hssv';
+      if(el.classList.contains('cn-entry-promo')) return 'cn-entry-promo';
+    }
+    return null;
+  }
+  function reorder(){
+    var wrap=document.getElementById(WRAP); if(!wrap) return false;
+    var cards=[].slice.call(wrap.children);
+    var present=cards.map(cardKey).filter(Boolean);
+    var need=['cnDashCard','cnPieCard','cnTableCard'];
+    var ready=need.every(function(k){return present.indexOf(k)>=0;});
+    if(!ready) return false;
+    ORDER.forEach(function(key){
+      var el=cards.filter(function(c){return cardKey(c)===key;})[0];
+      if(el) wrap.appendChild(el);
+    });
+    return true;
+  }
+
+  function api(){ return window.CTKMNUM || null; }
+  function getData(){
+    var prog=(document.getElementById('d_prog')||{}).value||'hssv';
+    var mon=(document.getElementById('d_month')||{}).value||'';
+    var a=api();
+    var rows=[];
+    if(a && a.ensureSeed){
+      var d=a.ensureSeed();
+      if(prog==='hssv') rows=(d.hssv[mon]||[]).slice();
+      else { var blk=d.promo[mon]; rows=(blk&&blk.rows||[]).slice(); }
+    }
+    return {prog:prog, mon:mon, rows:rows};
+  }
+  function tableForExport(){
+    var g=getData(), prog=g.prog, rows=g.rows;
+    var out=[];
+    if(prog==='hssv'){
+      out.push(['Ngày','Thứ','Khung','Số HSSV','% Mới','% Cũ','Tổng khách']);
+      rows.forEach(function(r){
+        ['s9','s12','s19'].forEach(function(k,idx){
+          var lbl=['9h-11h','12h-19h','19h-24h'][idx];
+          var o=r[k]||{};
+          out.push([r.date||'', r.thu||'', lbl, o.sl==null?'':o.sl, o.moi==null?'':o.moi, o.cu==null?'':o.cu, o.tk==null?'':o.tk]);
+        });
+      });
+    } else {
+      out.push(['Ngày','Thứ','Khung','Số khách gói','% Mới','% Cũ','Tổng khách']);
+      rows.forEach(function(r){
+        out.push([r.date||'', r.thu||'', '21h-24h', r.sl==null?'':r.sl, r.moi==null?'':r.moi, r.cu==null?'':r.cu, r.tk==null?'':r.tk]);
+      });
+    }
+    return out;
+  }
+  function fname(ext){ var g=getData(); return 'BaoCao_'+(g.prog==='hssv'?'HSSV':'ChuongTrinh')+'_'+(g.mon||'')+'.'+ext; }
+
+  function exportExcel(){
+    if(typeof XLSX==='undefined'){ alert('Thư viện Excel chưa sẵn sàng.'); return; }
+    var aoa=tableForExport();
+    var ws=XLSX.utils.aoa_to_sheet(aoa);
+    var wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'BaoCao');
+    XLSX.writeFile(wb, fname('xlsx'));
+  }
+
+  function svgToCanvas(scale){
+    scale=scale||2;
+    var host=document.getElementById('d_chart');
+    var svg=host? host.querySelector('svg') : null;
+    if(!svg) return Promise.reject('Không tìm thấy biểu đồ.');
+    var rect=svg.getBoundingClientRect();
+    var w=Math.max(1,Math.round(rect.width||svg.clientWidth||600));
+    var h=Math.max(1,Math.round(rect.height||svg.clientHeight||360));
+    var clone=svg.cloneNode(true);
+    clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
+    if(!clone.getAttribute('width')) clone.setAttribute('width', w);
+    if(!clone.getAttribute('height')) clone.setAttribute('height', h);
+    var data=new XMLSerializer().serializeToString(clone);
+    var svg64='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(data);
+    return new Promise(function(res,rej){
+      var img=new Image();
+      img.onload=function(){
+        var c=document.createElement('canvas');
+        c.width=w*scale; c.height=h*scale;
+        var ctx=c.getContext('2d');
+        ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,c.width,c.height);
+        ctx.drawImage(img,0,0,c.width,c.height);
+        res(c);
+      };
+      img.onerror=function(){ rej('Không thể tải biểu đồ.'); };
+      img.src=svg64;
+    });
+  }
+
+  function exportPNG(){
+    svgToCanvas(2).then(function(canvas){
+      var a=document.createElement('a');
+      a.href=canvas.toDataURL('image/png');
+      a.download=fname('png');
+      document.body.appendChild(a); a.click(); a.remove();
+    }).catch(function(e){ alert(e); });
+  }
+
+  function loadJsPDF(){
+    return new Promise(function(res,rej){
+      if(window.jspdf && window.jspdf.jsPDF){ res(window.jspdf.jsPDF); return; }
+      var s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload=function(){ (window.jspdf&&window.jspdf.jsPDF)? res(window.jspdf.jsPDF): rej('Không tải được jsPDF.'); };
+      s.onerror=function(){ rej('Không tải được jsPDF.'); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function exportPDF(){
+    var g=getData();
+    Promise.all([loadJsPDF(), svgToCanvas(2)]).then(function(arr){
+      var jsPDF=arr[0], canvas=arr[1];
+      var doc=new jsPDF({orientation:'landscape', unit:'pt', format:'a4'});
+      var pw=doc.internal.pageSize.getWidth();
+      doc.setFontSize(14);
+      doc.text('Bao cao: '+(g.prog==='hssv'?'HSSV':'Chuong trinh toi')+' - Thang '+(g.mon||''), 40, 40);
+      var imgData=canvas.toDataURL('image/png');
+      var maxW=pw-80;
+      var ratio=canvas.height/canvas.width;
+      var iw=maxW, ih=maxW*ratio;
+      if(ih>320){ ih=320; iw=ih/ratio; }
+      doc.addImage(imgData,'PNG',40,60,iw,ih);
+      var aoa=tableForExport();
+      var y=60+ih+24;
+      doc.setFontSize(9);
+      aoa.slice(0,26).forEach(function(row){
+        doc.text(row.map(function(c){return String(c);}).join('   |   '), 40, y);
+        y+=14;
+        if(y>doc.internal.pageSize.getHeight()-30){ doc.addPage(); y=40; }
+      });
+      doc.save(fname('pdf'));
+    }).catch(function(e){ alert(e); });
+  }
+
+  function injectExportBar(){
+    var dash=document.getElementById('cnDashCard'); if(!dash) return false;
+    if(document.getElementById('cn-export-bar')) return true;
+    var h3=dash.querySelector('h3.cn-h');
+    var bar=document.createElement('div');
+    bar.id='cn-export-bar';
+    bar.className='cn-row';
+    bar.style.cssText='margin:0 0 10px;gap:8px;align-items:center;flex-wrap:wrap';
+    bar.innerHTML='<span style="font-weight:600;color:#555;font-size:12px">Xuất báo cáo:</span>'
+      +'<button type="button" class="cn-btn sec cn-exp" data-t="xlsx">Excel (.xlsx)</button>'
+      +'<button type="button" class="cn-btn sec cn-exp" data-t="pdf">PDF</button>'
+      +'<button type="button" class="cn-btn sec cn-exp" data-t="png">PNG</button>';
+    if(h3 && h3.parentNode){ h3.parentNode.insertBefore(bar, h3.nextSibling); }
+    else { dash.insertBefore(bar, dash.firstChild); }
+    bar.addEventListener('click', function(e){
+      var b=e.target.closest('.cn-exp'); if(!b) return;
+      var ty=b.getAttribute('data-t');
+      if(ty==='xlsx') exportExcel();
+      else if(ty==='pdf') exportPDF();
+      else if(ty==='png') exportPNG();
+    });
+    return true;
+  }
+
+  function tick(){ var a=reorder(); var b=injectExportBar(); return a && b; }
+
+  var done=false;
+  function run(){ if(tick()) done=true; }
+  var mo=new MutationObserver(function(){ run(); });
+  function start(){
+    var wrap=document.getElementById(WRAP);
+    if(wrap) mo.observe(wrap, {childList:true, subtree:false});
+    mo.observe(document.body, {childList:true, subtree:true});
+    run();
+    var n=0; var iv=setInterval(function(){ run(); if(done || ++n>40) clearInterval(iv); }, 250);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>
 </body>
 </html>
