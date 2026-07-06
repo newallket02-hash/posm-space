@@ -2530,6 +2530,8 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
 <style id="ctkm-num-css">
 #ctkmNumWrap{display:none;padding:12px;max-width:1100px;margin:0 auto;font-size:14px}
 #ctkmNumWrap .cn-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+#ctkmNumWrap .cn-card.cn-entry-hssv{background:#eff6ff;border-color:#bfdbfe;border-left:4px solid #3b82f6}
+#ctkmNumWrap .cn-card.cn-entry-promo{background:#fff7ed;border-color:#fed7aa;border-left:4px solid #f97316}
 #ctkmNumWrap h3.cn-h{margin:0 0 10px;font-size:16px;font-weight:700;color:#111}
 #ctkmNumWrap .cn-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
 #ctkmNumWrap .cn-f{display:flex;flex-direction:column;gap:4px}
@@ -2601,7 +2603,7 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
 
   var SLOTS=[{k:'s9',label:'9h-11h'},{k:'s12',label:'12h-19h'},{k:'s19',label:'19h-24h'}];
   function renderForm(w){
-    var monthOpts=['T7','T6','T5'].map(function(m){return '<option value="'+m+'">Tháng '+m.slice(1)+'</option>';}).join('');
+    var monthOpts=['T5','T6','T7'].map(function(m){return '<option value="'+m+'">Tháng '+m.slice(1)+'</option>';}).join('');
     var slotHTML=SLOTS.map(function(s){
       return '<div class="cn-slot"><div class="cn-st">Khung '+s.label+'</div><div class="cn-row">'
         +'<div class="cn-f"><label>Số HSSV</label><input type="number" id="f_'+s.k+'_sl" min="0"></div>'
@@ -2611,7 +2613,7 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
         +'</div></div>';
     }).join('');
     w.innerHTML=''
-      +'<div class="cn-card"><h3 class="cn-h">Nhập số liệu HSSV theo ngày</h3>'
+      +'<div class="cn-card cn-entry-hssv"><h3 class="cn-h">Nhập số liệu HSSV theo ngày</h3>'
       +'<div class="cn-row">'
       +'<div class="cn-f"><label>Tháng</label><select id="f_month">'+monthOpts+'</select></div>'
       +'<div class="cn-f"><label>Ngày</label><input type="date" id="f_date"></div>'
@@ -2623,9 +2625,9 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
       +'<button class="cn-btn sec" id="f_clear">Xoá form</button>'
       +'<span class="cn-hint" id="f_msg"></span>'
       +'</div></div>'
-      +'<div class="cn-card"><h3 class="cn-h">Nhập số liệu Chương trình tối (139k/110k)</h3>'
+      +'<div class="cn-card cn-entry-promo"><h3 class="cn-h">Nhập số liệu Chương trình tối (139k/110k)</h3>'
       +'<div class="cn-row">'
-      +'<div class="cn-f"><label>Tháng</label><select id="p_month"><option value="T7">Tháng 7 (139k)</option><option value="T6">Tháng 6 (110k)</option></select></div>'
+      +'<div class="cn-f"><label>Tháng</label><select id="p_month"><option value="T6">Tháng 6 (110k)</option><option value="T7">Tháng 7 (139k)</option></select></div>'
       +'<div class="cn-f"><label>Ngày</label><input type="date" id="p_date"></div>'
       +'<div class="cn-f"><label>Thứ</label><input type="text" id="p_thu" readonly style="width:90px;background:#f3f4f6"></div>'
       +'</div>'
@@ -2760,7 +2762,7 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
   }
   function fillMonths(){
     var prog=document.getElementById('t_prog').value;
-    var months = prog==='hssv'?['T7','T6','T5']:['T7','T6'];
+    var months = prog==='hssv'?['T5','T6','T7']:['T6','T7'];
     var sel=document.getElementById('t_month');
     sel.innerHTML=months.map(function(m){var lbl='Tháng '+m.slice(1);if(prog==='promo')lbl+=(m==='T7'?' (139k)':' (110k)');return '<option value="'+m+'">'+lbl+'</option>';}).join('');
     var qn=document.getElementById('t_qnav');
@@ -2781,7 +2783,7 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
     var mon=document.getElementById('t_month').value;
     var __qn=document.getElementById('t_qnav');
     if(__qn){[].forEach.call(__qn.querySelectorAll('.cn-qbtn'),function(b){b.classList.toggle('active',b.getAttribute('data-m')===mon);});}
-    var rows=getRows(prog,mon).sort(function(a,b){return toISO(a.date)>toISO(b.date)?-1:1;});
+    var rows=getRows(prog,mon).sort(function(a,b){return toISO(a.date)<toISO(b.date)?-1:1;});
     var g=document.getElementById('t_grid');
     var th;
     if(prog==='hssv'){
