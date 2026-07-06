@@ -931,29 +931,65 @@ let dirty=new Set(), pushT=null;
   const log = document.getElementById('chatLog');
   const input = document.getElementById('chatInput');
   const btn = document.getElementById('chatSend');
-  let uid = sessionStorage.getItem('chatUid');
+  const usersBox = document.getElementById('chatUsers');
+  const titleBar = document.getElementById('chatTitle');
   if(!log || !input || !btn){ return; }
+  let uid = sessionStorage.getItem('chatUid');
   if(!uid){ uid = 'u' + Math.random().toString(36).slice(2,8); sessionStorage.setItem('chatUid', uid); }
   const myNick = (window.currentNickname) || uid;
-  function escapeHtml(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-  function render(messages){
-    if(!Array.isArray(messages)) return;
-    log.innerHTML = messages.map(m =>
-      `<div style="margin:4px 0"><b style="color:${m.id===uid?'#2563eb':'#111'}">${escapeHtml(m.nick||'?')}:</b> ${escapeHtml(m.text)}</div>`).join('');
+  let activeDM = null; // null = chat chung; hoac id nguoi dang chat rieng
+  let lastBoard = { messages:[], presence:{}, dms:[] };
+  function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function renderUsers(presence){
+    presence = presence || {};
+    const now = Date.now();
+    const ids = Object.keys(presence).filter(id=>id!==uid);
+    if(titleBar) titleBar.style.display = activeDM ? 'block' : 'none';
+    usersBox.innerHTML = ids.length ? ids.map(id=>{
+      const p = presence[id]||{}; const online = (now - (p.ts||0)) < 30000;
+      return `<div data-uid="${esc(id)}" style="cursor:pointer;padding:2px 0;${activeDM===id?'font-weight:700':''}">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:${online?'#22c55e':'#9ca3af'}"></span>${esc(p.name||id)}</div>`;
+    }).join('') : '<div style="color:#9ca3af">Chua co ai online</div>';
+    usersBox.querySelectorAll('[data-uid]').forEach(el=>{
+      el.addEventListener('click', ()=>{ activeDM = el.getAttribute('data-uid'); renderAll(lastBoard); });
+    });
+  }
+  function renderLog(board){
+    let list;
+    if(activeDM){
+      list = (board.dms||[]).filter(m=> (m.from===uid&&m.to===activeDM) || (m.from===activeDM&&m.to===uid))
+        .map(m=>({id:m.from, nick:m.fromNick, text:m.text}));
+    } else {
+      list = board.messages||[];
+    }
+    log.innerHTML = list.map(m=>
+      `<div style="margin:4px 0"><b style="color:${m.id===uid?'#2563eb':'#111'}">${esc(m.nick||'?')}:</b> ${esc(m.text)}</div>`).join('');
     log.scrollTop = log.scrollHeight;
   }
+  function renderAll(board){ lastBoard = board; renderUsers(board.presence); renderLog(board); }
   async function poll(){
-    try{ const board = await fetch(API,{cache:'no-store'}).then(r=>r.json()); render(board.messages); }catch(e){}
+    try{
+      const board = await fetch(API,{cache:'no-store'}).then(r=>r.json());
+      renderAll(board);
+    }catch(e){}
+  }
+  async function heartbeat(){
+    try{ await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ presence:{ id:uid, name:myNick } })}); }catch(e){}
   }
   async function send(){
     const text = input.value.trim(); if(!text) return; input.value='';
-    const msg = { id: uid, nick: myNick, text, ts: Date.now() };
-    try{ const res = await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ messages:[msg] })}).then(r=>r.json()); render(res.messages); }catch(e){}
+    let payload;
+    if(activeDM){ payload = { dms:[{ from:uid, fromNick:myNick, to:activeDM, text, ts:Date.now() }] }; }
+    else { payload = { messages:[{ id:uid, nick:myNick, text, ts:Date.now() }] }; }
+    try{ const res = await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json()); renderAll(res); }catch(e){}
   }
   btn.addEventListener('click', send);
   input.addEventListener('keydown', e=>{ if(e.key==='Enter') send(); });
+  if(titleBar) titleBar.addEventListener('click', ()=>{ activeDM = null; renderAll(lastBoard); });
+  heartbeat();
   poll();
   setInterval(poll, 3000);
+  setInterval(heartbeat, 15000);
 })();
 async function apiGet(){const r=await fetch(API,{cache:'no-store'});if(!r.ok)throw new Error('GET '+r.status);return r.json();}
 async function apiPost(p){const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});if(!r.ok)throw new Error('POST '+r.status);return r.json();}
@@ -3274,7 +3310,7 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
 })();
 </script><div id="chatBox" style="position:fixed;right:16px;bottom:16px;width:300px;background:#fff;border:1px solid #ddd;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.15);font-size:13px;z-index:9999;overflow:hidden">
   <div style="background:#2563eb;color:#fff;padding:8px 12px;font-weight:600">Chat (tam thoi)</div>
-  <div id="chatLog" style="height:220px;overflow-y:auto;padding:8px"></div>
+  <div id="chatUsers" style="max-height:90px;overflow-y:auto;padding:6px 8px;border-bottom:1px solid #eee;font-size:12px"></div><div id="chatTitle" style="display:none;padding:4px 8px;background:#eef2ff;font-size:12px;cursor:pointer">&#8592; Quay lai chat chung</div><div id="chatLog" style="height:200px;overflow-y:auto;padding:8px"></div>
   <div style="display:flex;border-top:1px solid #eee">
     <input id="chatInput" placeholder="Nhap tin nhan..." maxlength="300" style="flex:1;border:0;padding:8px;outline:none">
     <button id="chatSend" style="border:0;background:#2563eb;color:#fff;padding:0 14px;cursor:pointer">Gui</button>
