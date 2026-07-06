@@ -936,7 +936,7 @@ let dirty=new Set(), pushT=null;
   if(!log || !input || !btn){ return; }
   let uid = sessionStorage.getItem('chatUid');
   if(!uid){ uid = 'u' + Math.random().toString(36).slice(2,8); sessionStorage.setItem('chatUid', uid); }
-  const myNick = (window.currentNickname) || uid;
+  let myNick = uid; try{ const s=JSON.parse(localStorage.getItem('posm_session')||'{}'); if(s.u){ uid=s.u; myNick=s.name||s.u; } const nk=JSON.parse(localStorage.getItem('posm_nicknames')||'{}'); if(uid&&nk[uid]) myNick=nk[uid]; }catch(e){}
   let activeDM = null; // null = chat chung; hoac id nguoi dang chat rieng
   let lastBoard = { messages:[], presence:{}, dms:[] };
   function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -986,7 +986,7 @@ let dirty=new Set(), pushT=null;
   btn.addEventListener('click', send);
   input.addEventListener('keydown', e=>{ if(e.key==='Enter') send(); });
   if(titleBar) titleBar.addEventListener('click', ()=>{ activeDM = null; renderAll(lastBoard); });
-  heartbeat();
+  (function(){ const head=document.getElementById('chatHead'), toggle=document.getElementById('chatToggle'); if(head){ head.addEventListener('click', ()=>{ const c=usersBox.style.display!=='none'; ['chatUsers','chatTitle','chatLog'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=c?'none':(id==='chatTitle'?(activeDM?'block':'none'):''); }); const bar=input.parentNode; if(bar) bar.style.display=c?'none':'flex'; if(toggle) toggle.innerHTML=c?'+':'\u2013'; }); } })();
   poll();
   setInterval(poll, 3000);
   setInterval(heartbeat, 15000);
