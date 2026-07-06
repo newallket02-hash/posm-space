@@ -3309,7 +3309,7 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script><div id="chatBox" style="position:fixed;right:16px;bottom:16px;width:300px;background:#fff;border:1px solid #ddd;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.15);font-size:13px;z-index:9999;overflow:hidden">
-  <div style="background:#2563eb;color:#fff;padding:8px 12px;font-weight:600">Chat (tam thoi)</div>
+  <div id="chatHead" style="background:#2563eb;color:#fff;padding:8px 12px;font-weight:600;display:flex;justify-content:space-between;align-items:center;cursor:pointer"><span>Chat (tam thoi)</span><span id="chatToggle" style="font-size:16px">&#8211;</span></div>
   <div id="chatUsers" style="max-height:90px;overflow-y:auto;padding:6px 8px;border-bottom:1px solid #eee;font-size:12px"></div><div id="chatTitle" style="display:none;padding:4px 8px;background:#eef2ff;font-size:12px;cursor:pointer">&#8592; Quay lai chat chung</div><div id="chatLog" style="height:200px;overflow-y:auto;padding:8px"></div>
   <div style="display:flex;border-top:1px solid #eee">
     <input id="chatInput" placeholder="Nhap tin nhan..." maxlength="300" style="flex:1;border:0;padding:8px;outline:none">
