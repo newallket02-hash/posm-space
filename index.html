@@ -932,6 +932,7 @@ let dirty=new Set(), pushT=null;
   const input = document.getElementById('chatInput');
   const btn = document.getElementById('chatSend');
   let uid = sessionStorage.getItem('chatUid');
+  if(!log || !input || !btn){ return; }
   if(!uid){ uid = 'u' + Math.random().toString(36).slice(2,8); sessionStorage.setItem('chatUid', uid); }
   const myNick = (window.currentNickname) || uid;
   function escapeHtml(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
