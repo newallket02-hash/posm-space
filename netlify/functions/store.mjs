@@ -6,6 +6,7 @@ export default async (req) => {
   if (!Array.isArray(board.activity)) board.activity = [];
   if (!board.nicknames || typeof board.nicknames !== 'object') board.nicknames = {};
   if (!board.avatars || typeof board.avatars !== 'object') board.avatars = {};
+  if (!Array.isArray(board.messages)) board.messages = [];
 
   if (req.method === 'GET') {
     return new Response(JSON.stringify(board), {
@@ -29,7 +30,15 @@ export default async (req) => {
   if (Array.isArray(body.activity) && body.activity.length) {
     board.activity = board.activity.concat(body.activity).slice(-30);
   }
-
+// Chat tam thoi: nhan tin nhan moi
+    if (Array.isArray(body.messages) && body.messages.length) {
+      board.messages = board.messages.concat(body.messages);
+    }
+    const TTL_MS = 10 * 60 * 1000;   // 10 phut -> tin nhan tu bien mat
+    const now = Date.now();
+    board.messages = board.messages
+      .filter((m) => m && m.ts && (now - m.ts) < TTL_MS)
+      .slice(-60);
   // Nickname toan he thong: merge {username: nickname}
   if (body.nicknames && typeof body.nicknames === 'object') {
     for (const u in body.nicknames) {
@@ -40,7 +49,7 @@ export default async (req) => {
 
   board.savedAt = new Date().toISOString();
     await store.setJSON('board', board);
-    return new Response(JSON.stringify({ ok: true, count: Object.keys(board.tasks).length, activity: board.activity, nicknames: board.nicknames, avatars: board.avatars }), {
+    return new Response(JSON.stringify({ ok: true, count: Object.keys(board.tasks).length, activity: board.activity, nicknames: board.nicknames, avatars: board.avatars , messages: board.messages}), {
       headers: { 'content-type': 'application/json' }
     });
   }
