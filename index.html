@@ -927,7 +927,7 @@ function exportExcel(){
 /* ---------- lưu CHUNG trên web qua Netlify Blobs ---------- */
 const API='/.netlify/functions/store';
 let dirty=new Set(), pushT=null;
-(function initChat(){
+window.__chatStarted=false; function initChat(){   if(window.__chatStarted) return;
   const log = document.getElementById('chatLog');
   const input = document.getElementById('chatInput');
   const btn = document.getElementById('chatSend');
