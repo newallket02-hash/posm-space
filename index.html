@@ -2648,15 +2648,53 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
   function gv(id){var e=document.getElementById(id);if(!e)return null;var v=e.value;if(v==='')return null;var n=parseFloat(v);return isNaN(n)?null:n;}
   function sv(id,val){var e=document.getElementById(id);if(e)e.value=(val==null?'':val);}
   function wireForm(){
+    // === Auto-enhancements (added) ===
+    // 1) Auto-switch summary table filter to the just-saved program & month
+    window.syncTableTo=function(prog,month){
+      try{
+        var ep=document.getElementById('t_prog'); if(!ep) return;
+        ep.value=prog; if(typeof fillMonths==='function') fillMonths();
+        var em=document.getElementById('t_month'); if(em){ em.value=month; }
+        if(typeof renderTable==='function') renderTable();
+        var card=document.getElementById('cnTableCard');
+        if(card&&card.scrollIntoView) card.scrollIntoView({behavior:'smooth',block:'start'});
+      }catch(e){}
+    };
+    // 2) Auto-complement % Mới <-> % Cũ (sum = 100)
+    function linkPct(idMoi,idCu){
+      var m=document.getElementById(idMoi), c=document.getElementById(idCu);
+      if(!m||!c) return;
+      function comp(src,dst){ dst.addEventListener('input',function(){
+        var v=parseFloat(src.value);
+        if(src.value===''){return;}
+        if(isNaN(v)) return;
+        v=Math.max(0,Math.min(100,v));
+        dst.value=(100-v);
+      });}
+      // typing in Mới fills Cũ, and typing in Cũ fills Mới
+      m.addEventListener('input',function(){var v=parseFloat(m.value); if(m.value===''){c.value='';return;} if(isNaN(v))return; v=Math.max(0,Math.min(100,v)); c.value=(100-v);});
+      c.addEventListener('input',function(){var v=parseFloat(c.value); if(c.value===''){m.value='';return;} if(isNaN(v))return; v=Math.max(0,Math.min(100,v)); m.value=(100-v);});
+    }
+    linkPct('p_moi','p_cu');
+    SLOTS.forEach(function(s){ linkPct('f_'+s.k+'_moi','f_'+s.k+'_cu'); });
+    // 3) Thứ auto-fill fallback: also react to 'input' and fill on load if a date is present
+    ['f_date','p_date'].forEach(function(id){
+      var el=document.getElementById(id); if(!el) return;
+      var thuEl=document.getElementById(id==='f_date'?'f_thu':'p_thu');
+      function fill(){ if(thuEl) thuEl.value=el.value?thuOf(el.value):''; }
+      el.addEventListener('input',fill);
+      if(el.value) fill();
+    });
+    // === end auto-enhancements ===
     var fdate=document.getElementById('f_date');
     fdate.addEventListener('change',function(){document.getElementById('f_thu').value=fdate.value?thuOf(fdate.value):'';loadDayIntoForm();});
     document.getElementById('f_month').addEventListener('change',loadDayIntoForm);
-    document.getElementById('f_save').onclick=saveHSSV;
+    document.getElementById('f_save').onclick=function(){saveHSSV();syncTableTo('hssv',document.getElementById('f_month').value);};
     document.getElementById('f_clear').onclick=function(){SLOTS.forEach(function(s){['sl','moi','cu','tk'].forEach(function(k){sv('f_'+s.k+'_'+k,'');});});document.getElementById('f_msg').textContent='';};
     var pdate=document.getElementById('p_date');
     pdate.addEventListener('change',function(){document.getElementById('p_thu').value=pdate.value?thuOf(pdate.value):'';loadPromoIntoForm();});
     document.getElementById('p_month').addEventListener('change',loadPromoIntoForm);
-    document.getElementById('p_save').onclick=savePromo;
+    document.getElementById('p_save').onclick=function(){savePromo();syncTableTo('promo',document.getElementById('p_month').value);};
     document.getElementById('p_clear').onclick=function(){['sl','moi','cu','tk'].forEach(function(k){sv('p_'+k,'');});document.getElementById('p_msg').textContent='';};
   }
   function loadDayIntoForm(){
