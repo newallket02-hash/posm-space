@@ -14,7 +14,7 @@
   --gold:#b8893a; --gold-soft:#f3e9d6;
   --red:#d64545; --red-soft:#fcebe9;
   --amber:#d98322; --amber-soft:#fbf0dd;
-  --green:#3f8f5b;
+  --green:#3f8f5b;h
   --c-intake:#8a92a3; --c-design:#5b6bb5; --c-review:#d98322; --c-produce:#9163c4; --c-install:#2f9e8f; --c-done:#3f8f5b;
   --r:12px; --r-sm:8px;
 }
@@ -3233,7 +3233,7 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
   function tick(){ var a=reorder(); var b=injectExportBar(); return a && b; }
 
   var done=false;
-  function run(){ if(tick()) done=true; }
+  function run(){ if(done) return; if(tick()){ done=true; mo.disconnect(); } }
   var mo=new MutationObserver(function(){ run(); });
   function start(){
     var wrap=document.getElementById(WRAP);
