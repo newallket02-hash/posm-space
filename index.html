@@ -174,18 +174,18 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
   .pcard .pn{width:100%;margin-bottom:6px;font-weight:600}
   .pcard .pg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}
   .pcard .pg2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
-  .pcard select,.pcard input,.pcard textarea{width:100%;padding:7px 8px;border:1px solid #e0d8c8;border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box}
+  .pcard select,.pcard input,.pcard textarea{width:100%;padding:7px 8px;border:1px solid #e1e5eb;border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box}
   .pcard textarea{min-height:54px;resize:vertical}
   .pcard .rm{margin-top:2px;background:#fbeaea;border:1px solid #f0c2bd;color:#b3261e;border-radius:8px;padding:7px 10px;width:100%;cursor:pointer}
   .thumb{max-width:100%;max-height:200px;border-radius:10px;border:1px solid #e8e2d6;display:block}
   .cimg{height:48px;width:auto;max-width:100%;object-fit:cover;border-radius:6px;margin-top:6px;display:block}
   .tabs{display:flex;gap:6px;margin-top:10px}
-  .tab{flex:1;padding:9px 10px;border:1px solid #e6dfce;background:#fff;border-radius:10px;font-weight:700;font-size:13px;color:#8a857d;cursor:pointer}
-  .tab.on{background:#c79a3a;color:#fff;border-color:#c79a3a}
+  .tab{flex:1;padding:9px 10px;border:1px solid #e1e5eb;background:#fff;border-radius:10px;font-weight:700;font-size:13px;color:#8a857d;cursor:pointer}
+  .tab.on{background:#0068ff;color:#fff;border-color:#0068ff}
   .dsum{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 10px}
   .dsum .s{padding:8px 12px;border-radius:10px;font-weight:700;font-size:13px}
   .dctrl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-  .dctrl select{padding:8px;border:1px solid #e0d8c8;border-radius:8px;font-size:13px;background:#fff}
+  .dctrl select{padding:8px;border:1px solid #e1e5eb;border-radius:8px;font-size:13px;background:#fff}
   .dlist{display:flex;flex-direction:column;gap:16px;padding-bottom:50px}
   .dgrp h4{margin:0 0 8px;font-size:13px;color:#8a857d;font-weight:700}
   .dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
@@ -283,14 +283,14 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
 </head>
 <body>
 
-<div id="loginGate" style="position:fixed;inset:0;z-index:9999;background:#f4efe4;display:flex;align-items:center;justify-content:center;padding:20px">
-  <div style="width:100%;max-width:340px;background:#fff;border:1px solid #e6dfce;border-radius:16px;padding:22px;box-shadow:0 12px 34px rgba(0,0,0,.10)">
-    <div style="font-weight:800;font-size:19px;margin-bottom:2px">POSM <span style="color:#c79a3a">Ms Trúc</span></div>
+<div id="loginGate" style="position:fixed;inset:0;z-index:9999;background:#f0f2f5;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="width:100%;max-width:340px;background:#fff;border:1px solid #e1e5eb;border-radius:16px;padding:22px;box-shadow:0 12px 34px rgba(0,0,0,.10)">
+    <div style="font-weight:800;font-size:19px;margin-bottom:2px">POSM <span style="color:#0068ff">Ms Trúc</span></div>
     <div style="color:#8a857d;font-size:13px;margin-bottom:16px">Đăng nhập để xem</div>
-    <input id="lgU" placeholder="ID" autocomplete="username" style="width:100%;padding:12px;border:1px solid #e0d8c8;border-radius:10px;margin-bottom:10px;box-sizing:border-box;font-size:15px">
-    <input id="lgP" type="password" placeholder="Mật khẩu" autocomplete="current-password" style="width:100%;padding:12px;border:1px solid #e0d8c8;border-radius:10px;box-sizing:border-box;font-size:15px" onkeydown="if(event.key==='Enter')doLogin()">
+    <input id="lgU" placeholder="ID" autocomplete="username" style="width:100%;padding:12px;border:1px solid #e1e5eb;border-radius:10px;margin-bottom:10px;box-sizing:border-box;font-size:15px">
+    <input id="lgP" type="password" placeholder="Mật khẩu" autocomplete="current-password" style="width:100%;padding:12px;border:1px solid #e1e5eb;border-radius:10px;box-sizing:border-box;font-size:15px" onkeydown="if(event.key==='Enter')doLogin()">
     <div id="lgErr" style="color:#b3261e;font-size:13px;min-height:18px;margin:8px 0"></div>
-    <button onclick="doLogin()" style="width:100%;padding:12px;border:none;border-radius:10px;background:#c79a3a;color:#fff;font-weight:700;font-size:15px;cursor:pointer">Đăng nhập</button>
+    <button onclick="doLogin()" style="width:100%;padding:12px;border:none;border-radius:10px;background:#0068ff;color:#fff;font-weight:700;font-size:15px;cursor:pointer">Đăng nhập</button>
   </div>
 </div>
 
@@ -339,7 +339,7 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
 
 <div class="board" id="board"></div>
 <div id="tableWrap" style="display:none;padding:0 14px 24px">
-  <input class="inp" style="width:100%;padding:11px;border:1px solid #e0d8c8;border-radius:10px;margin:8px 0 10px"
+  <input class="inp" style="width:100%;padding:11px;border:1px solid #e1e5eb;border-radius:10px;margin:8px 0 10px"
     placeholder="Thêm nhanh: @Q2 #PDX102 !Gấp Standee sảnh chính | ghi chú nội dung… (Enter)"
     onkeydown="if(event.key==='Enter')quickAdd(this)">
   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
@@ -1206,7 +1206,7 @@ function buildTable(){
       {title:'PĐX',field:'pdx',width:120,editor:'input',formatter:pdxFormatter,
         cellClick:(e,cell)=>openPdxEditor(cell.getRow().getData().taskId)},
       {title:'Ưu tiên',field:'prio',width:110,editor:'list',editorParams:{values:PRIOS},
-        formatter:(c)=>{const v=c.getValue();const cl=v==='Gấp'?'#c0392b':(v==='Trung bình'?'#c79a3a':'#888');
+        formatter:(c)=>{const v=c.getValue();const cl=v==='Gấp'?'#c0392b':(v==='Trung bình'?'#0068ff':'#888');
           return '<span style="color:'+cl+';font-weight:600">'+(v||'—')+'</span>';}},
       {title:'Trạng thái',field:'col',width:150,editor:'list',editorParams:{values:colOpts},
         formatter:(c)=>colOpts[c.getValue()]||c.getValue()},
@@ -1243,7 +1243,7 @@ function openPdxEditor(id){
   document.getElementById('drawTitle').textContent='PĐX · '+id;
   document.getElementById('drawBody').innerHTML=
     '<label class="hint">Link phiếu đề xuất (PĐX)</label>'+
-    '<input id="pdxLinkInp" class="inp" style="width:100%;margin:6px 0 12px;padding:10px;border:1px solid #e0d8c8;border-radius:8px" '+
+    '<input id="pdxLinkInp" class="inp" style="width:100%;margin:6px 0 12px;padding:10px;border:1px solid #e1e5eb;border-radius:8px" '+
       'placeholder="https://... hoặc mã PĐX" value="'+esc(t.pdxLink)+'" '+
       'onchange="upd(\''+id+'\',\'pdxLink\',this.value); if(__tbl)__tbl.updateData([{taskId:\''+id+'\',pdxLink:this.value}])">'+
     '<div id="pdxDrop_'+id+'" style="border:2px dashed #cbb98a;border-radius:12px;padding:22px;text-align:center;color:#8a857d;cursor:pointer" '+
@@ -1263,7 +1263,7 @@ function renderPdxThumbs(id){
   const t=store.tasks[id]; const box=document.getElementById('pdxThumbs_'+id); if(!box)return;
   const imgs=t.pdxImgs||(t.pdxImg?[t.pdxImg]:[]);
   box.innerHTML=imgs.map((src,i)=>'<div style="position:relative">'+
-     '<img src="'+src+'" style="width:88px;height:88px;object-fit:cover;border-radius:8px;border:1px solid #e6dfce">'+
+     '<img src="'+src+'" style="width:88px;height:88px;object-fit:cover;border-radius:8px;border:1px solid #e1e5eb">'+
      '<button onclick="rmPdxImg(\''+id+'\','+i+')" style="position:absolute;top:-6px;right:-6px;border:none;background:#c0392b;color:#fff;border-radius:50%;width:20px;height:20px;cursor:pointer">×</button>'+
    '</div>').join('')||'<span class="hint" style="color:#bbb">Chưa có ảnh</span>';
 }
@@ -1357,7 +1357,7 @@ function renderXlsMap(){
     __xlsHeaders.map((h,i)=>'<option value="'+i+'" '+(sel==i?'selected':'')+'>'+esc(h)+'</option>').join('');
   const rowsHtml=XLS_FIELDS.map(fd=>'<tr>'+
       '<td style="padding:6px 8px;font-weight:600">'+fd.label+(fd.req?' <span style="color:#c0392b">*</span>':'')+'</td>'+
-      '<td style="padding:6px 8px"><select class="inp" style="width:100%;padding:8px;border:1px solid #e0d8c8;border-radius:8px" '+
+      '<td style="padding:6px 8px"><select class="inp" style="width:100%;padding:8px;border:1px solid #e1e5eb;border-radius:8px" '+
         'onchange="xlsSetMap(\''+fd.f+'\',this.value)">'+opt(__xlsMap[fd.f])+'</select></td></tr>').join('');
   area.innerHTML='<div class="divider"></div>'+
     '<div class="hint" style="margin-bottom:8px"><b>'+__xlsRows.length+'</b> dòng. Ánh xạ cột file → trường task:</div>'+
