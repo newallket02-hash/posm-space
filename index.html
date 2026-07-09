@@ -9,14 +9,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#1d1c1a; --soft:#5b574f; --muted:#9a948a;
-  --paper:#f5f2ea; --card:#fff; --line:#e6e1d6;h --line2:#efebe2;
-  --gold:#b8893a; --gold-soft:#f3e9d6;
-  --red:#d64545; --red-soft:#fcebe9;
-  --amber:#d98322; --amber-soft:#fbf0dd;
-  --green:#3f8f5b;h
-  --c-intake:#8a92a3; --c-design:#5b6bb5; --c-review:#d98322; --c-produce:#9163c4; --c-install:#2f9e8f; --c-done:#3f8f5b;
-  --r:12px; --r-sm:8px;
+    --ink:#1a2027; --soft:#4a5568; --muted:#8a94a6;
+    --paper:#f0f2f5; --card:#fff; --line:#e1e5ebh; --line2:#eef1f5;
+    --gold:#0068ff; --gold-soft:#e7f0ff;
+    --red:#e0245e; --red-soft:#fdeaf0;
+    --amber:#f0932b; --amber-soft:#fdf1e3;
+    --green:#22a06b;
+    --c-intake:#8a94a6; --c-design:#0068ff; --c-review:#f0932b; --c-produce:#7c5cff; --c-install:#12b3a8; --c-done:#22a06b;
+    --r:12px; --r-sm:8px;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -32,8 +32,8 @@ body{font-family:'Be Vietnam Pro',system-ui,sans-serif;background:var(--paper);c
 .btn{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 12px;border-radius:var(--r-sm);
   font:inherit;font-weight:600;font-size:12px;cursor:pointer;transition:.12s}
 .btn:hover{border-color:var(--gold);color:var(--gold)}
-.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
-.btn.primary:hover{background:#000}
+.btn.primary{background:var(--gold);color:#fff;border-color:var(--gold)}
+.btn.primary:hover{background:#0052cc}
 .btn.sm{padding:5px 9px;font-size:11.5px}
 
 /* progress bar */
@@ -53,7 +53,7 @@ body{font-family:'Be Vietnam Pro',system-ui,sans-serif;background:var(--paper);c
 .filt{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:6px 0 12px}
 .pill{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:5px 12px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.12s}
 .pill:hover{border-color:var(--ink)}
-.pill.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pill.on{background:var(--gold);color:#fff;border-color:var(--gold)}
 .pill .n{font-weight:800}
 .pill.red.on{background:var(--red);border-color:var(--red)} .pill.red .n{color:var(--red)} .pill.red.on .n{color:#fff}
 .pill.amber.on{background:var(--amber);border-color:var(--amber)} .pill.amber .n{color:var(--amber)} .pill.amber.on .n{color:#fff}
@@ -63,7 +63,7 @@ input.search:focus,select.f:focus{outline:none;border-color:var(--gold)}
 
 /* board */
 .board{display:flex;gap:12px;padding:4px 20px 80px;max-width:1480px;margin:0 auto;overflow-x:auto;align-items:flex-start}
-.col{flex:1 0 220px;min-width:220px;background:#fbf9f4;border:1px solid var(--line2);border-radius:var(--r);padding:8px;transition:.12s}
+.col{flex:1 0 220px;min-width:220px;background:#f7f9fc;border:1px solid var(--line2);border-radius:var(--r);padding:8px;transition:.12s}
 .col.drag{background:var(--gold-soft);border-color:var(--gold)}
 .col h3{margin:2px 4px 9px;font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:7px;color:var(--soft);text-transform:uppercase;letter-spacing:.3px}
 .col h3 .dot{width:9px;height:9px;border-radius:50%;flex:none}
@@ -245,7 +245,7 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
   .dbranch:hover{color:#3f6b46}
   .dtable{margin:4px 0 10px}
   .dtable tbody tr{cursor:pointer}
-  .dtable tbody tr:hover td{background:#fbf9f4}
+  .dtable tbody tr:hover td{background:#f7f9fc}
   .dtable tr.darea td{background:#efe8d8;font-weight:800;color:#5b574f}
   .dtable tr.empty td{background:#f6f4ef}
   .dtable tr.empty:hover td{background:#f0ede4}
