@@ -10,7 +10,7 @@
 <style>
 :root{
     --ink:#1a2027; --soft:#4a5568; --muted:#8a94a6;
-    --paper:#f0f2f5; --card:#fff; --line:#e1e5eb; --line2:#eef1f5;
+    --paper:#f0f2f5; --card:#fff; --line:#e1e5ebh; --line2:#eef1f5;
     --gold:#0068ff; --gold-soft:#e7f0ff;
     --red:#e0245e; --red-soft:#fdeaf0;
     --amber:#f0932b; --amber-soft:#fdf1e3;
@@ -1938,7 +1938,7 @@ function renderNotif(){
   else{
     list.innerHTML = acts.map(function(a){
       if(a.type==='mention'){
-        return '<div class="notifItem notifMention" data-goto="'+__esc(a.taskId||a.id)+'" data-cid="'+__esc(a.cid||'')+'" title="Bạn được nhắc tới — bấm để tới bình luận"><b>'+__esc((typeof __accByAny==='function'&&__accByAny(a.by))?__accName(__accByAny(a.by).u):a.by)+'</b> đã nhắc tới bạn trong <b>'+__esc(a.name||a.taskId||a.id)+'</b><div class="t">'+__relTime(a.at)+'</div></div>';
+        return '<div class="notifItem notifMention" data-goto="'+__esc(a.taskId||a.id)+'" data-cid="'+__esc(a.cid||'')+'" title="Bạn được nhắc tới — bấm để tới bình luận"><b>'+__esc((typeof __accByAny==='function'&&__accByAny(a.by))?__accName(__accByAny(a.by).u):a.by)+'</b> đã nhắc đến bạn trong <b>1 bình luận</b><div class="t">'+__relTime(a.at)+'</div></div>';
       }
       return '<div class="notifItem" data-goto="'+__esc(a.id)+'" title="Bấm để tới thay đổi này"><b>'+__esc(a.by)+'</b> vừa cập nhật <b>'+__esc(a.name||a.id)+'</b><div class="t">'+__relTime(a.at)+'</div></div>';
     }).join('');
