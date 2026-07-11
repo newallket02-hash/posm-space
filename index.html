@@ -75,7 +75,7 @@ input.search:focus,select.f:focus{outline:none;border-color:var(--gold)}
   padding:9px 10px;cursor:grab;transition:.1s;box-shadow:0 1px 1px rgba(0,0,0,.03)}
 .card:hover{box-shadow:0 3px 10px rgba(0,0,0,.07);transform:translateY(-1px)}
 .card:active{cursor:grabbing}
-.card.urgent{border-left-color:var(--red)}
+.card.urgent{background:#fff1f0;border-color:#ffa39e;border-left-color:var(--red)}.card.urgent .nm{color:#a8071a}.card.over{background:#feffe6;border-color:#fffb8f;border-left-color:var(--amber)}.card.over .nm{color:#ad8b00}.card.stuck{background:#f5f5f5;border-color:#d9d9d9;opacity:.75}.card.stuck .nm{color:#8c8c8c}
 /* Khung khoanh vùng đỏ khi nhảy từ thông báo tới card */
 
 /* ===== Nhan xet / Comment (them moi) ===== */
@@ -526,7 +526,7 @@ function cardHTML(t){
   }
   const gap=(!isDone(t)&&t.prio==='Gấp')?`<span class="pillsm gap">GẤP</span>`:'';
   const demo=t.demo?`<span class="pillsm demo">DEMO</span>`:'';
-  const cls=isUrgent(t)?'urgent':(isStuck(t)?'stuck':'');
+  const cls=isOverdue(t)?'over':(isUrgent(t)?'urgent':(isStuck(t)?'stuck':''));
   const i=COL_IDS.indexOf(t.col);
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
   return `<div class="card ${cls}" data-id="${t.taskId}" draggable="true" ondragstart="dStart(event,'${t.taskId}')" ondragend="dEnd()" onclick="openTask('${t.taskId}')">
