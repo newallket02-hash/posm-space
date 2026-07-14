@@ -487,7 +487,7 @@ function render(){
     `<button class="pill red ${filter.tag==='urgent'?'on':''}" onclick="setTag('urgent')">🔴 Gấp <span class="n">${urg.length}</span></button>`+
     `<button class="pill red ${filter.tag==='over'?'on':''}" onclick="setTag('over')">⏰ Trễ <span class="n">${over.length}</span></button>`+
     `<button class="pill amber ${filter.tag==='stuck'?'on':''}" onclick="setTag('stuck')">⚠️ Kẹt <span class="n">${stk.length}</span></button>`+
-    `<span style="width:1px;height:22px;background:var(--line);margin:0 2px"></span>`+`<button class="pill ${filter.branch===''?'on':''}" onclick="setBranch('')">Tất cả CN</button>`+['Quận 2','Quận 1','Quận 7','Đà Nẵng','Thủ Đức'].map(b=>`<button class="pill ${filter.branch===b?'on':''}" onclick="setBranch('${b}')">${b}</button>`).join('')+`<select class="f" onchange="filter.branch=this.value;render()"><option value="">Tất cả chi nhánh</option>`+
+    `<span style="width:1px;height:22px;background:var(--line);margin:0 2px"></span>`+`<button class="pill ${filter.branch===''?'on':''}" onclick="setBranch('')">Tất cả CN</button>`+['Quận 2','Khác'].map(b=>`<button class="pill ${filter.branch===b?'on':''}" onclick="setBranch('${b}')">${b}</button>`).join('')+`<select class="f" onchange="filter.branch=this.value;render()"><option value="">Tất cả chi nhánh</option>`+
       [...new Set(A.map(t=>t.branch).filter(Boolean))].sort().map(b=>`<option ${filter.branch===b?'selected':''}>${b}</option>`).join('')+`</select>`;
   // board
   const board=document.getElementById('board');
