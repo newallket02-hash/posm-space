@@ -401,7 +401,7 @@ function __accName(u){ var a=(typeof ACCOUNTS!=='undefined'?ACCOUNTS.find(functi
 function __accByAny(str){ str=(str||'').trim(); if(typeof ACCOUNTS==='undefined')return null; var lo=str.toLowerCase(); return ACCOUNTS.find(function(a){ return a.name.toLowerCase()===lo || (__nicknames[a.u]&&__nicknames[a.u].toLowerCase()===lo) || a.u.toLowerCase()===lo; })||null; }
 function __mentionNames(){ return (typeof ACCOUNTS!=='undefined'?ACCOUNTS.map(function(a){return __accName(a.u);}):[]); }
 function __curUserObj(){ try{ return JSON.parse(localStorage.getItem('posm_session')); }catch(e){ return null; } }
-const BRANCHES=['Healing World Q2','Nhà hàng Quận 2','Healing Land Q7','Q7','Quận 1','Thủ Đức','Đà Nẵng','Khác'];
+const BRANCHES=['Quận 2','Khác'];
 const BRANCH_COLORS={
   'Quận 2':{bg:'#e3f1e8',fg:'#2f7d4f'}, 'Quận 7':{bg:'#e6edfb',fg:'#3556a8'},
   'Quận 1':{bg:'#efe7fb',fg:'#6b3fb5'}, 'Thủ Đức':{bg:'#fbeede',fg:'#b56a17'},
