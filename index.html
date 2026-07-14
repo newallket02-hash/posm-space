@@ -513,7 +513,7 @@ function pass(t){
   if(filter.tag==='over'&&!isOverdue(t))return false;
   if(filter.tag==='stuck'&&!isStuck(t))return false;
   if(filter.branch&&t.branch!==filter.branch)return false;
-  if(filter.q){const h=[t.taskId,t.pdx,t.name,t.requester,t.branch,t.detail,t.note].join(' ').toLowerCase();if(!h.includes(filter.q.toLowerCase()))return false;}
+  if(filter.q){var __q=filter.q.trim();var __dm=__q.match(/^(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?$/);if(__dm){var __ud=parseDate(t.updated);if(!__ud)return false;var __n1=+__dm[1],__n2=+__dm[2],__yr=__dm[3]?(+__dm[3]<100?2000+ +__dm[3]:+__dm[3]):null;var __d=__ud.getDate(),__mo=__ud.getMonth()+1,__y=__ud.getFullYear();var __hit=((__n1===__d&&__n2===__mo)||(__n1===__mo&&__n2===__d));if(__yr!==null)__hit=__hit&&(__yr===__y);if(!__hit)return false;return true;}var h=[t.taskId,t.pdx,t.name,t.requester,t.branch,t.detail,t.note].join(' ').toLowerCase();if(!h.includes(filter.q.toLowerCase()))return false;}
   return true;
 }
 function cardHTML(t){
