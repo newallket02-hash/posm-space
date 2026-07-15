@@ -272,6 +272,8 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
 
 /* ===== Avatar theo ID (them moi) ===== */
 .myAvaWrap{display:inline-flex;align-items:center;gap:6px}
+.myAvaEditBtn{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;padding:0;margin-left:2px;border:1px solid var(--line);border-radius:50%;background:var(--card);color:var(--soft);font-size:11px;line-height:1;cursor:pointer;transition:.12s}
+.myAvaEditBtn:hover{background:var(--gold-soft);color:var(--gold);border-color:var(--gold)}
 .myAva{width:30px;height:30px;border-radius:50%;object-fit:cover;border:1.5px solid var(--line);background:var(--gold-soft);cursor:pointer;flex:none;transition:.12s}
 .myAva:hover{border-color:var(--gold)}
 .myAvaFallback{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;background:var(--gold);cursor:pointer;flex:none;border:1.5px solid var(--line);text-transform:uppercase}
@@ -280,6 +282,33 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link href="https://unpkg.com/tabulator-tables@5.6.1/dist/css/tabulator.min.css" rel="stylesheet">
 <script src="https://unpkg.com/tabulator-tables@5.6.1/dist/js/tabulator.min.js"></script>
+<style id="msgChatStyle">
+#chatBox{position:fixed;right:16px;bottom:16px;width:328px;max-width:calc(100vw - 24px);background:#fff;border:1px solid #e4e6eb;border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.18);font-size:14px;z-index:9999;overflow:hidden;display:flex;flex-direction:column;font-family:'Be Vietnam Pro',system-ui,sans-serif}
+#chatHead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;background:linear-gradient(135deg,#0a7cff,#0064e0);color:#fff;cursor:grab;user-select:none}
+#chatHead:active{cursor:grabbing}
+#chatHead .chatHeadLeft{display:flex;align-items:center;gap:9px;min-width:0}
+#chatHead .chatHeadAva{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.22);font-size:17px;flex:none}
+#chatHead .chatHeadInfo{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+#chatHead .chatHeadName{font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#chatHead .chatHeadStatus{font-size:11px;opacity:.85;display:flex;align-items:center;gap:4px}
+#chatHead .chatHeadStatus::before{content:'';width:7px;height:7px;border-radius:50%;background:#31d158;display:inline-block}
+#chatToggle{cursor:pointer;font-size:20px;line-height:1;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:.15s;flex:none}
+#chatToggle:hover{background:rgba(255,255,255,.2)}
+#chatBody{display:flex;flex-direction:column;background:#fff}
+#chatUsers{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;border-bottom:1px solid #f0f2f5;max-height:120px;overflow:auto}
+#chatUsers:empty{display:none}
+#chatTitle{padding:8px 12px;font-size:12.5px;font-weight:600;color:#0a7cff;cursor:pointer;background:#f7f9fc;border-bottom:1px solid #f0f2f5}
+#chatTitle:hover{background:#eef3fb}
+#chatLog{flex:1;min-height:180px;max-height:340px;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px;background:#fff}
+#chatLog::-webkit-scrollbar{width:7px}#chatLog::-webkit-scrollbar-thumb{background:#c9ccd1;border-radius:8px}
+.chatInputBar{display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid #f0f2f5;background:#fff}
+#chatInput{flex:1;border:0;background:#f0f2f5;border-radius:20px;padding:9px 14px;font-size:14px;outline:none;font-family:inherit;color:#050505}
+#chatInput::placeholder{color:#8a8d91}
+#chatInput:focus{background:#e9ebee;box-shadow:0 0 0 2px rgba(10,124,255,.25)}
+#chatSend{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#0a7cff;color:#fff;font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+#chatSend:hover{background:#0064e0}#chatSend:active{transform:scale(.94)}
+#chatBox.min #chatBody{display:none}
+</style>
 </head>
 <body>
 
@@ -301,7 +330,7 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
     <div class="sp"></div>
     <button class="btn primary" onclick="saveAll()">💾 Lưu</button>
     <button class="btn" onclick="pullShared()">🔄 Tải mới</button>
-    <button class="btn" id="btnTunhap" onclick="openDraw('add')">✍ Tự nhập</button>
+    <button class="btn" id="btnTunhap" onclick="openDraw('add')" style="background:var(--red);border-color:var(--red);color:#fff">➕ Thêm task mới</button>
     <button class="btn" id="btnExcel" onclick="exportExcel()">📊 Excel</button>
     <!-- Hiển thị tên tài khoản đang đăng nhập + nút Đăng xuất -->
     <div class="notifWrap">
@@ -311,7 +340,7 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
         <div id="notifList"><div class="notifEmpty">Chưa có hoạt động nào</div></div>
       </div>
     </div>
-    <span class="myAvaWrap"><span id="myAvaHost" onclick="openAvatarEditor()" title="Doi anh dai dien cua ban"></span></span><span id="whoami" style="font-weight:600;font-size:12px;color:var(--soft);margin-left:4px"></span><button class="btn sm" id="btnEditNick" onclick="openNickEditor()" title="Đổi nick name của bạn" style="margin-left:6px">✎ Nick</button>
+    <span class="myAvaWrap"><span id="myAvaHost" onclick="avatarClick(event)" title="Xem anh dai dien (bam de phong to)" style="cursor:zoom-in"></span><button type="button" class="myAvaEditBtn" id="btnEditAva" onclick="openAvatarEditor()" title="Doi anh dai dien">✎</button></span><span id="whoami" style="font-weight:600;font-size:12px;color:var(--soft);margin-left:4px"></span><button class="btn sm" id="btnEditNick" onclick="openNickEditor()" title="Đổi nick name của bạn" style="margin-left:6px">✎ Nick</button>
     <button class="btn sm" onclick="logout()">🚪 Đăng xuất</button>
     <button class="btn sm" onclick="openDraw('data')">⋯ Dữ liệu</button>
   </div>
@@ -491,7 +520,7 @@ function render(){
       [...new Set(A.map(t=>t.branch).filter(Boolean))].sort().map(b=>`<option ${filter.branch===b?'selected':''}>${b}</option>`).join('')+`</select>`;
   // board
   const board=document.getElementById('board');
-  if(!A.length){board.innerHTML='<div style=\"padding:30px;text-align:center;color:var(--muted);width:100%\">Chưa có task nào.<br>Nếu chị mở qua link <b>claude.ai</b> thì sandbox có thể chặn dữ liệu — hãy tải file về máy hoặc host lên Netlify.<br>Hoặc dùng <b>✍ Tự nhập</b> / <b>⬇ Dán Sheet</b> / <b>🔄 Đồng bộ</b> để thêm task.</div>';return;}
+  if(!A.length){board.innerHTML='<div style=\"padding:30px;text-align:center;color:var(--muted);width:100%\">Chưa có task nào.<br>Nếu chị mở qua link <b>claude.ai</b> thì sandbox có thể chặn dữ liệu — hãy tải file về máy hoặc host lên Netlify.<br>Hoặc dùng <b>➕ Thêm task mới</b> / <b>⬇ Dán Sheet</b> / <b>🔄 Đồng bộ</b> để thêm task.</div>';return;}
   // cập nhật UI tìm kiếm
   const matched=A.filter(pass).length;
   const sc=document.getElementById('searchCount'),scl=document.getElementById('searchClear');
@@ -2311,6 +2340,17 @@ function refreshMyAvatar(){
     host.innerHTML = '<span class="myAvaFallback">'+__avaInitial()+'</span>';
   }
 }
+function avatarClick(ev){
+  try{ if(ev){ ev.preventDefault(); ev.stopPropagation(); } }catch(e){}
+  var host = document.getElementById('myAvaHost');
+  var img = host ? host.querySelector('img.myAva') : null;
+  if(img && img.getAttribute('src')){
+    if(typeof zoomImg==='function'){ zoomImg(img.getAttribute('src')); }
+  } else {
+    // Chua co anh: mo trinh chinh sua de them anh
+    if(typeof openAvatarEditor==='function'){ openAvatarEditor(); }
+  }
+}
 function openAvatarEditor(){
   var s = null;
   try{ s = __curUserObj(); }catch(e){}
@@ -3310,12 +3350,25 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
-</script><div id="chatBox" style="position:fixed;right:16px;bottom:16px;width:300px;background:#fff;border:1px solid #ddd;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.15);font-size:13px;z-index:9999;overflow:hidden">
-  <div id="chatHead" style="background:#2563eb;color:#fff;padding:8px 12px;font-weight:600;display:flex;justify-content:space-between;align-items:center;cursor:pointer"><span>Chat (tam thoi)</span><span id="chatToggle" style="font-size:16px">&#8211;</span></div>
-  <div id="chatUsers" style="max-height:90px;overflow-y:auto;padding:6px 8px;border-bottom:1px solid #eee;font-size:12px"></div><div id="chatTitle" style="display:none;padding:4px 8px;background:#eef2ff;font-size:12px;cursor:pointer">&#8592; Quay lai chat chung</div><div id="chatLog" style="height:200px;overflow-y:auto;padding:8px"></div>
-  <div style="display:flex;border-top:1px solid #eee">
-    <input id="chatInput" placeholder="Nhap tin nhan..." maxlength="300" style="flex:1;border:0;padding:8px;outline:none">
-    <button id="chatSend" style="border:0;background:#2563eb;color:#fff;padding:0 14px;cursor:pointer">Gui</button>
+</script><div id="chatBox">
+  <div id="chatHead">
+    <div class="chatHeadLeft">
+      <span class="chatHeadAva">💬</span>
+      <div class="chatHeadInfo">
+        <span class="chatHeadName">Tin nhắn</span>
+        <span class="chatHeadStatus">Đang hoạt động</span>
+      </div>
+    </div>
+    <span id="chatToggle" title="Thu gọn / mở rộng">–</span>
+  </div>
+  <div id="chatBody">
+    <div id="chatUsers"></div>
+    <div id="chatTitle">← Quay lại chat chung</div>
+    <div id="chatLog"></div>
+    <div class="chatInputBar">
+      <input id="chatInput" type="text" placeholder="Aa" autocomplete="off">
+      <button id="chatSend" title="Gửi" aria-label="Gửi">➤</button>
+    </div>
   </div>
 </div>
 <script>
