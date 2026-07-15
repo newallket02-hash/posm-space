@@ -10,7 +10,7 @@
 <style>
 :root{
     --ink:#1a2027; --soft:#4a5568; --muted:#8a94a6;
-    --paper:#f0f2f5; --card:#fff; --line:#e1e5ebh; --line2:#eef1f5;
+    --paper:#f0f2f5; --card:#fff; --line:#e1e5eb; --line2:#eef1f5;
     --gold:#0068ff; --gold-soft:#e7f0ff;
     --red:#e0245e; --red-soft:#fdeaf0;
     --amber:#f0932b; --amber-soft:#fdf1e3;
@@ -44,7 +44,7 @@ body{font-family:'Be Vietnam Pro',system-ui,sans-serif;background:var(--paper);c
 .prog .lbl b{color:var(--ink)}
 
 /* filter row */
-.searchbar{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:4px 6px 4px 14px;margin:12px 0 10px;max-width:560px}
+.searchbar{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid #dcdcdc;border-radius:24px;padding:4px 6px 4px 14px;margin:12px 0 10px;max-width:560px}
 .searchbar .sicon{font-size:13px;opacity:.6}
 .searchbar input{flex:1;border:none;outline:none;font:inherit;font-size:13.5px;background:transparent;padding:6px 2px}
 .searchbar .sclear{border:none;background:#efece5;color:var(--soft);border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:12px;font-weight:700}
@@ -71,7 +71,7 @@ input.search:focus,select.f:focus{outline:none;border-color:var(--gold)}
 .colbody{min-height:30px;display:flex;flex-direction:column;gap:7px}
 
 /* card */
-.card{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--line);border-radius:var(--r-sm);
+.card{background:var(--card);border:1px solid #dcdcdc;border-left:3px solid var(--line);border-radius:var(--r-sm);
   padding:9px 10px;cursor:grab;transition:.1s;box-shadow:0 1px 1px rgba(0,0,0,.03)}
 .card:hover{box-shadow:0 3px 10px rgba(0,0,0,.07);transform:translateY(-1px)}
 .card:active{cursor:grabbing}
