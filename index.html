@@ -3375,5 +3375,189 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
   (function(){var box=document.getElementById('chatBox');if(!box)return;var handle=document.getElementById('chatHead')||box;var sx=0,sy=0,ox=0,oy=0,drag=false;function pt(e){return e.touches?e.touches[0]:e;}function down(e){if(e.target.closest&&e.target.closest('button'))return;var p=pt(e);sx=p.clientX;sy=p.clientY;var r=box.getBoundingClientRect();box.style.right='auto';box.style.bottom='auto';box.style.left=r.left+'px';box.style.top=r.top+'px';ox=r.left;oy=r.top;drag=true;document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);}function move(e){if(!drag)return;if(e.cancelable)e.preventDefault();var p=pt(e);var nx=ox+(p.clientX-sx);var ny=oy+(p.clientY-sy);nx=Math.max(0,Math.min(nx,window.innerWidth-box.offsetWidth));ny=Math.max(0,Math.min(ny,window.innerHeight-box.offsetHeight));box.style.left=nx+'px';box.style.top=ny+'px';}function up(){drag=false;document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);}handle.style.cursor='move';handle.style.touchAction='none';handle.addEventListener('mousedown',down);handle.addEventListener('touchstart',down,{passive:true});var rb=document.createElement('button');rb.textContent='\u2922';rb.title='Ve cho cu';rb.style.cssText='border:0;background:rgba(255,255,255,.25);color:#fff;font-size:13px;line-height:1;padding:0 6px;margin-left:6px;border-radius:4px;cursor:pointer';rb.onclick=function(ev){ev.stopPropagation();box.style.left='auto';box.style.top='auto';box.style.right='16px';box.style.bottom='16px';};handle.appendChild(rb);})();
 </script>
   
+
+<style id="cn-analysis-css">
+#cnAnalysisCard .an-inputs{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:12px}
+#cnAnalysisCard .an-f{display:flex;flex-direction:column;gap:4px}
+#cnAnalysisCard .an-f label{font-size:12px;color:#555;font-weight:600}
+#cnAnalysisCard .an-f input{border:1px solid #d1d5db;border-radius:7px;padding:7px 9px;font-size:14px;width:150px}
+#cnAnalysisCard .an-block{border:1px solid #eee;border-radius:8px;padding:12px;margin-top:10px;background:#fafafa}
+#cnAnalysisCard .an-block h4{margin:0 0 8px;font-size:14px;font-weight:700;color:#111}
+#cnAnalysisCard .an-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+#cnAnalysisCard .an-kpi{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px}
+#cnAnalysisCard .an-kpi .k{font-size:11px;color:#888;font-weight:600}
+#cnAnalysisCard .an-kpi .v{font-size:16px;font-weight:800;color:#111;margin-top:2px}
+#cnAnalysisCard .an-kpi .v.good{color:#16a34a}
+#cnAnalysisCard .an-kpi .v.warn{color:#f97316}
+#cnAnalysisCard .an-kpi .v.bad{color:#dc2626}
+#cnAnalysisCard .an-bar{height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden;margin-top:6px}
+#cnAnalysisCard .an-bar > i{display:block;height:100%;background:#16a34a;border-radius:99px}
+#cnAnalysisCard .an-rec{margin-top:10px;padding:10px;border-radius:8px;background:#eff6ff;border-left:4px solid #3b82f6;font-size:13px;color:#1e3a8a;line-height:1.5}
+#cnAnalysisCard .an-block.b-tot{background:#f0fdf4;border-color:#bbf7d0}
+</style>
+
+<script id="cn-analysis-js">
+(function(){
+  'use strict';
+  var KEY='ctkm_num_v1';
+  var CFG_KEY='ctkm_analysis_cfg_v1';
+  var MONTH_DAYS={T5:31,T6:30,T7:31};
+  function load(){try{return JSON.parse(localStorage.getItem(KEY));}catch(e){return null;}}
+  function loadCfg(){try{return JSON.parse(localStorage.getItem(CFG_KEY))||{};}catch(e){return {};}}
+  function saveCfg(c){try{localStorage.setItem(CFG_KEY,JSON.stringify(c));}catch(e){}}
+  function fmt(n){ if(n==null||isNaN(n)) return '—'; return Math.round(n).toLocaleString('vi-VN'); }
+  function fmtVND(n){ if(n==null||isNaN(n)) return '—'; return Math.round(n).toLocaleString('vi-VN')+'đ'; }
+  function pct(a,b){ if(!b) return 0; return a/b*100; }
+  // ---- data helpers ----
+  function hssvKhach(d,m){ var arr=(d.hssv&&d.hssv[m])||[]; return arr.reduce(function(s,r){return s+(r.totKhach||0);},0); }
+  function promoKhach(d,m){ var o=d.promo&&d.promo[m]; if(!o||!o.rows) return 0; return o.rows.reduce(function(s,r){return s+(r.sl||0);},0); }
+  function promoPrice(d,m){ var o=d.promo&&d.promo[m]; return (o&&o.price)?o.price*1000:0; }
+  function daysWithData(arr,field){ return (arr||[]).filter(function(r){return field?(r[field]!=null&&r[field]>0):(r.totKhach!=null&&r.totKhach>0);}).length; }
+  function promoDaysWithData(rows){ return (rows||[]).filter(function(r){return r.sl!=null&&r.sl>0;}).length; }
+  // find current month = the one with most recent data (has any entries)
+  function pickCurMonth(d){ var order=['T7','T6','T5']; for(var i=0;i<order.length;i++){ var m=order[i]; if(hssvKhach(d,m)>0||promoKhach(d,m)>0) return m; } return 'T7'; }
+  function prevMonth(m){ return {T7:'T6',T6:'T5',T5:null}[m]; }
+  function block(title,cls,kpis,recHTML){
+    var g=kpis.map(function(k){ return '<div class="an-kpi"><div class="k">'+k.k+'</div><div class="v '+(k.cls||'')+'">'+k.v+'</div>'+(k.bar!=null?'<div class="an-bar"><i style="width:'+Math.min(100,Math.max(0,k.bar))+'%"></i></div>':'')+'</div>'; }).join('');
+    return '<div class="an-block '+(cls||'')+'"><h4>'+title+'</h4><div class="an-grid">'+g+'</div>'+(recHTML?'<div class="an-rec">'+recHTML+'</div>':'')+'</div>';
+  }
+  // ---- core analysis for one revenue stream ----
+  function analyzeStream(opts){
+    // opts: {label, price, curKhach, curDays, target, remainDays, fixedCost}
+    var rev = opts.curKhach*opts.price;
+    var beCust = opts.price? opts.fixedCost/opts.price : 0; // breakeven customers
+    var bePct = pct(opts.curKhach, beCust);
+    var need = Math.max(0, opts.target - opts.curKhach);
+    var perDay = opts.remainDays>0? need/opts.remainDays : need;
+    var goalPct = pct(opts.curKhach, opts.target);
+    return {rev:rev, beCust:beCust, bePct:bePct, need:need, perDay:perDay, goalPct:goalPct};
+  }
+  function kpiSet(a, opts){
+    var beCls = a.bePct>=100?'good':(a.bePct>=70?'warn':'bad');
+    var goalCls = a.goalPct>=100?'good':(a.goalPct>=70?'warn':'bad');
+    return [
+      {k:'Khách hiện tại', v:fmt(opts.curKhach)},
+      {k:'Doanh thu ước tính', v:fmtVND(a.rev)},
+      {k:'Mốc hòa vốn', v:fmt(a.beCust)+' khách'},
+      {k:'% Hòa vốn', v:a.bePct.toFixed(1)+'%', cls:beCls, bar:a.bePct},
+      {k:'Mục tiêu ('+opts.targetLabel+')', v:fmt(opts.target)+' khách'},
+      {k:'% Đạt mục tiêu', v:a.goalPct.toFixed(1)+'%', cls:goalCls, bar:a.goalPct},
+      {k:'Còn cần thêm', v:fmt(a.need)+' khách'},
+      {k:'TB cần/ngày ('+opts.remainDays+' ngày)', v:a.perDay.toFixed(1)+' khách'}
+    ];
+  }
+  function recFor(name, a, opts){
+    if(a.bePct>=100){
+      if(a.goalPct>=100) return '<b>'+name+':</b> Đã hòa vốn và vượt mục tiêu. Mỗi khách mới là lợi nhuận ròng — tập trung giữ chân khách & nâng chất lượng dịch vụ thay vì giảm giá.';
+      if(a.perDay<=12) return '<b>'+name+':</b> Đã hòa vốn (vượt xa mốc). Chỉ cần ~'+a.perDay.toFixed(1)+' khách/ngày trong '+opts.remainDays+' ngày là vượt mục tiêu. Áp lực thấp — không cần giảm giá sâu, ưu tiên chất lượng dịch vụ.';
+      return '<b>'+name+':</b> Đã hòa vốn. Cần ~'+a.perDay.toFixed(1)+' khách/ngày để đạt mục tiêu — nên đẩy nhẹ truyền thông/ưu đãi có kiểm soát biên lợi nhuận.';
+    }
+    return '<b>'+name+':</b> Chưa hòa vốn ('+a.bePct.toFixed(1)+'%). Cần thêm '+fmt(Math.max(0,a.beCust-opts.curKhach))+' khách để hòa vốn. Cân nhắc chương trình kéo khách ngắn hạn.';
+  }
+  window.renderCNAnalysis=function(){
+    var host=document.getElementById('cnAnalysisBody'); if(!host) return;
+    var d=load(); if(!d){ host.innerHTML='<div class="an-rec">Chưa có dữ liệu. Hãy nhập số liệu ở tab Số liệu CTKM trước.</div>'; return; }
+    var cfg=loadCfg();
+    var fixedCost=(cfg.fixedCost!=null?cfg.fixedCost:15000000);
+    var hssvPrice=(cfg.hssvPrice!=null?cfg.hssvPrice:60000);
+    var cur=pickCurMonth(d); var prev=prevMonth(cur);
+    // targets: max of prev month and highest month
+    var allM=['T5','T6','T7'];
+    function totKhachOf(m){ return hssvKhach(d,m)+promoKhach(d,m); }
+    var highest=allM.reduce(function(best,m){ return totKhachOf(m)>totKhachOf(best)?m:best; }, allM[0]);
+    // remaining days in current month
+    var curHssvDays=daysWithData(d.hssv&&d.hssv[cur]);
+    var curPromoDays=promoDaysWithData(d.promo&&d.promo[cur]&&d.promo[cur].rows);
+    var elapsed=Math.max(curHssvDays,curPromoDays,1);
+    var remain=Math.max(0,(MONTH_DAYS[cur]||30)-elapsed);
+    var out='';
+    // ---- Promo stream ----
+    (function(){
+      var price=promoPrice(d,cur); if(!price){ return; }
+      var curK=promoKhach(d,cur);
+      var prevK=prev?promoKhach(d,prev):0;
+      var highK=promoKhach(d,highest);
+      var target=Math.max(prevK,highK);
+      var tLabel = target===prevK && target!==highK ? ('T'+prev.slice(1)) : ('cao nhất T'+highest.slice(1));
+      if(prevK>=highK) tLabel='T'+prev.slice(1);
+      var a=analyzeStream({price:price,curKhach:curK,target:target,remainDays:remain,fixedCost:fixedCost});
+      out+=block('Gói CTKM tối ('+(price/1000)+'k) — '+cur, 'b-promo', kpiSet(a,{curKhach:curK,target:target,targetLabel:tLabel,remainDays:remain}), recFor('Gói CTKM',a,{curKhach:curK,remainDays:remain}));
+    })();
+    // ---- HSSV stream ----
+    (function(){
+      var curK=hssvKhach(d,cur);
+      var prevK=prev?hssvKhach(d,prev):0;
+      var highK=Math.max(hssvKhach(d,'T5'),hssvKhach(d,'T6'),hssvKhach(d,'T7'));
+      var target=Math.max(prevK,highK);
+      var tLabel= prevK>=highK ? ('T'+ (prev?prev.slice(1):'') ) : 'cao nhất';
+      var a=analyzeStream({price:hssvPrice,curKhach:curK,target:target,remainDays:remain,fixedCost:fixedCost});
+      out+=block('Mảng HSSV — '+cur+' (đơn giá '+fmtVND(hssvPrice)+')', 'b-hssv', kpiSet(a,{curKhach:curK,target:target,targetLabel:tLabel,remainDays:remain}), recFor('HSSV',a,{curKhach:curK,remainDays:remain}));
+    })();
+    // ---- Total ----
+    (function(){
+      var curK=totKhachOf(cur);
+      var prevK=prev?totKhachOf(prev):0;
+      var highK=totKhachOf(highest);
+      var target=Math.max(prevK,highK);
+      var tLabel = prevK>=highK ? ('T'+(prev?prev.slice(1):'')) : ('cao nhất T'+highest.slice(1));
+      // blended revenue = promo rev + hssv rev
+      var rev=promoKhach(d,cur)*promoPrice(d,cur)+hssvKhach(d,cur)*hssvPrice;
+      var beCust= 0; // combined breakeven expressed as customers is ambiguous; show revenue-based
+      var beRev=fixedCost;
+      var bePct=pct(rev,beRev);
+      var need=Math.max(0,target-curK);
+      var perDay=remain>0?need/remain:need;
+      var goalPct=pct(curK,target);
+      var beCls=bePct>=100?'good':(bePct>=70?'warn':'bad');
+      var goalCls=goalPct>=100?'good':(goalPct>=70?'warn':'bad');
+      var kpis=[
+        {k:'Tổng khách '+cur, v:fmt(curK)},
+        {k:'Tổng doanh thu ước tính', v:fmtVND(rev)},
+        {k:'Chi phí cố định', v:fmtVND(beRev)},
+        {k:'% Hòa vốn (theo DT)', v:bePct.toFixed(1)+'%', cls:beCls, bar:bePct},
+        {k:'Mục tiêu ('+tLabel+')', v:fmt(target)+' khách'},
+        {k:'% Đạt mục tiêu', v:goalPct.toFixed(1)+'%', cls:goalCls, bar:goalPct},
+        {k:'Còn cần thêm', v:fmt(need)+' khách'},
+        {k:'TB cần/ngày ('+remain+' ngày)', v:perDay.toFixed(1)+' khách'}
+      ];
+      var rec;
+      if(bePct>=100){ rec='<b>Tổng quan:</b> Toàn quán đã hòa vốn (đạt '+bePct.toFixed(0)+'% theo doanh thu). '+(goalPct>=100?'Đã vượt mục tiêu — mọi khách mới là lợi nhuận ròng.':('Cần TB ~'+perDay.toFixed(1)+' khách/ngày trong '+remain+' ngày còn lại để vượt mục tiêu '+tLabel+'. '+(perDay<=15?'Áp lực thấp: ưu tiên chất lượng dịch vụ, không giảm giá sâu.':'Nên tăng cường truyền thông/ưu đãi có kiểm soát.'))); }
+      else { rec='<b>Tổng quan:</b> Chưa hòa vốn ('+bePct.toFixed(1)+'%). Ưu tiên tăng lượng khách để đạt điểm hòa vốn trước khi tính mục tiêu tăng trưởng.'; }
+      out+=block('TỔNG KHÁCH (Tất cả chương trình) — '+cur, 'b-tot', kpis, rec);
+    })();
+    host.innerHTML=out;
+  };
+  function ensureCard(){
+    var wrap=document.getElementById('ctkmNumWrap'); if(!wrap) return false;
+    if(document.getElementById('cnAnalysisCard')) return true;
+    var cfg=loadCfg();
+    var fixedCost=(cfg.fixedCost!=null?cfg.fixedCost:15000000);
+    var hssvPrice=(cfg.hssvPrice!=null?cfg.hssvPrice:60000);
+    var card=document.createElement('div'); card.className='cn-card'; card.id='cnAnalysisCard';
+    card.innerHTML='<h3 class="cn-h">📊 Phân tích tình hình kinh doanh</h3>'
+      +'<div class="an-inputs">'
+      +'<div class="an-f"><label>Chi phí cố định / tháng (đ)</label><input type="number" id="an_fixed" value="'+fixedCost+'" min="0" step="500000"></div>'
+      +'<div class="an-f"><label>Đơn giá HSSV TB (đ)</label><input type="number" id="an_hssv" value="'+hssvPrice+'" min="0" step="5000"></div>'
+      +'<div class="an-f"><label>&nbsp;</label><button class="cn-btn" id="an_refresh">Cập nhật phân tích</button></div>'
+      +'</div>'
+      +'<div class="cn-hint">Mốc hòa vốn = Chi phí cố định ÷ đơn giá. Đơn giá HSSV chưa có số thật → mặc định 60.000đ (có thể suy chính xác từ: doanh thu thật ÷ tổng khách). Mục tiêu = tổng khách tháng liền trước hoặc tháng cao nhất.</div>'
+      +'<div id="cnAnalysisBody" style="margin-top:12px"></div>';
+    wrap.appendChild(card);
+    function apply(){ var c=loadCfg(); c.fixedCost=parseFloat(document.getElementById('an_fixed').value)||0; c.hssvPrice=parseFloat(document.getElementById('an_hssv').value)||0; saveCfg(c); window.renderCNAnalysis(); }
+    document.getElementById('an_refresh').onclick=apply;
+    document.getElementById('an_fixed').addEventListener('change',apply);
+    document.getElementById('an_hssv').addEventListener('change',apply);
+    window.renderCNAnalysis();
+    return true;
+  }
+  // Show/refresh when the CTKM tab is opened
+  function hook(){
+    var t=document.getElementById('tabCtkmNum');
+    if(t && !t.__anHook){ t.__anHook=true; t.addEventListener('click',function(){ setTimeout(function(){ ensureCard(); window.renderCNAnalysis&&window.renderCNAnalysis(); },120); }); }
+  }
+  var n=0, iv=setInterval(function(){ hook(); if(document.getElementById('ctkmNumWrap')){ ensureCard(); } if(++n>60) clearInterval(iv); },500);
+})();
+</script>
+
 </body>
 </html>
