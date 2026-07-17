@@ -328,7 +328,12 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
   <div class="row1">
     <div class="brand">POSM <b>Ms Trúc</b><span>Quản lý tiến độ POSM</span></div>
     <div class="sp"></div>
-    <button class="btn primary" onclick="saveAll()">💾 Lưu</button>
+    <button class="btn primary" onclick="saveAll()">💾 Lưu</button><span class="memberWrap" style="position:relative;display:inline-block">
+<button class="btn" id="btnMembers" onclick="toggleMembers(event)">👥 Thành viên <span id="memberOnlineCount" style="opacity:.75"></span></button>
+<div id="memberDrop" style="display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:200px;background:#fff;border:1px solid #e4e6eb;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:8px 0;z-index:10000">
+<div style="padding:4px 14px 8px;font-weight:700;font-size:13px;color:#334155;border-bottom:1px solid #f0f2f5;margin-bottom:4px">Thành viên</div>
+<div id="memberList" style="max-height:300px;overflow:auto"></div>
+</div></span>
     <button class="btn" onclick="pullShared()">🔄 Tải mới</button>
     <button class="btn" id="btnTunhap" onclick="openDraw('add')" style="background:var(--red);border-color:var(--red);color:#fff">➕ Thêm task mới</button>
     <button class="btn" id="btnExcel" onclick="exportExcel()">📊 Excel</button>
@@ -499,6 +504,7 @@ function parseDate(s){if(!s)return null;s=(''+s).trim();
   const d=new Date(s);return isNaN(d)?null:d;}
 function daysLeft(t){const d=parseDate(t.deadline);if(!d)return null;const a=new Date();a.setHours(0,0,0,0);d.setHours(0,0,0,0);return Math.round((d-a)/86400000);}
 function isDone(t){return t.col==='done';}
+function isDoneToday(t){ if(t.col!=='done') return false; var d=parseDate(t.updated); if(!d) return false; var n=new Date(); return d.getDate()===n.getDate()&&d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear(); }
 function isOverdue(t){if(isDone(t))return false;const dl=daysLeft(t);return dl!==null&&dl<0;}
 function isUrgent(t){if(isDone(t))return false;const dl=daysLeft(t);return t.prio==='Gấp'||(dl!==null&&dl<=2);}
 function isStuck(t){if(isDone(t))return false;if(t.stuck)return true;if(isOverdue(t))return true;return t.col==='intake'||t.col==='review';}
@@ -530,9 +536,9 @@ function render(){
   if(sc)sc.textContent=filter.q?(matched+' kết quả'):'';
   if(scl)scl.style.display=filter.q?'block':'none';
   board.innerHTML=COLS.map(c=>{
-    let items=A.filter(t=>t.col===c.id&&pass(t));
+    let items=A.filter(t=>t.col===c.id&&pass(t)&&(c.id!=='done'||isDoneToday(t)));
     items.sort((a,b)=>(daysLeft(a)??999)-(daysLeft(b)??999));
-    const total=A.filter(t=>t.col===c.id).length;
+    const total=(c.id==='done')?A.filter(t=>t.col==='done'&&isDoneToday(t)).length:A.filter(t=>t.col===c.id).length;
     return `<div class="col" data-col="${c.id}"
         ondragover="dOver(event,'${c.id}')" ondragleave="dLeave(event)" ondrop="dDrop(event,'${c.id}')">
       <h3><span class="dot" style="background:${c.color}"></span>${c.label}<span class="cnt">${total}</span></h3>
@@ -1001,13 +1007,9 @@ window.__chatStarted=false; function initChat(){   if(window.__chatStarted) retu
   function renderPresenceTL(presence){
   presence = presence || {};
   function __esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  var box = document.getElementById('presenceTL');
-  if(!box){
-    box = document.createElement('div');
-    box.id = 'presenceTL';
-    box.style.cssText = 'position:fixed;left:6px;top:50%;transform:translateY(-50%);z-index:9999;font-size:11px;line-height:1.5;color:#374151;font-family:inherit;pointer-events:none;max-height:90vh;overflow:auto;padding:4px 0;';
-    document.body.appendChild(box);
-  }
+  var old = document.getElementById('presenceTL'); if(old){ old.remove(); }
+  var box = document.getElementById('memberList');
+  if(!box){ return; }
   var now = Date.now();
   var online = {};
   Object.keys(presence).forEach(function(k){
@@ -1015,22 +1017,20 @@ window.__chatStarted=false; function initChat(){   if(window.__chatStarted) retu
     if(now - (p.ts||0) < 30000 && p.name){ online[String(p.name).trim().toLowerCase()] = true; }
   });
   var list = (typeof ACCOUNTS !== 'undefined' ? ACCOUNTS : []);
-  var html = '';
+  var html = ''; var onCount = 0;
   list.forEach(function(a){
     var nm = a.name || a.u;
     var isOn = !!online[String(nm).trim().toLowerCase()] || !!online[String(a.u).trim().toLowerCase()];
+    if(isOn) onCount++;
     var color = isOn ? '#22c55e' : '#9ca3af';
-    html += '<div style="white-space:nowrap;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:'+color+';"></span>'+__esc(nm)+'</div>';
+    html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 14px;font-size:13px;white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:'+color+'"></span><span>'+__esc(nm)+'</span><span style="margin-left:auto;font-size:11px;color:'+(isOn?'#16a34a':'#9ca3af')+'">'+(isOn?'online':'offline')+'</span></div>';
   });
   box.innerHTML = html;
+  var oc = document.getElementById('memberOnlineCount'); if(oc){ oc.textContent = '('+onCount+'/'+list.length+')'; }
 }
-function __revealCTKM(){
-  try{
-    var su = (typeof sessionUser==='function'? sessionUser():null);
-    var btn = document.getElementById('tabPromo');
-    if(btn){ btn.style.display = (su && su.u==='truc') ? '' : 'none'; }
-  }catch(e){}
-}
+function toggleMembers(e){ if(e){ e.stopPropagation(); } var d=document.getElementById('memberDrop'); if(d){ d.style.display = (d.style.display==='none'||!d.style.display)?'block':'none'; } }
+document.addEventListener('click', function(e){ var d=document.getElementById('memberDrop'); var w=e.target.closest && e.target.closest('.memberWrap'); if(d && !w){ d.style.display='none'; } });
+function __revealCTKM(){ var btn=document.getElementById('tabPromo'); if(btn){ btn.style.display=''; } }
 setInterval(__revealCTKM, 1000);
 document.addEventListener('DOMContentLoaded', __revealCTKM);
 function renderAll(board){ lastBoard = board; renderUsers(board.presence); try{ renderPresenceTL(board.presence); }catch(e){} renderLog(board); }
