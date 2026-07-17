@@ -348,7 +348,7 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
   <div class="tabs">
     <button class="tab on" id="tabPosm" onclick="switchView('posm')">📋 Tiến độ POSM</button>
     <button class="tab" id="tabDisp" onclick="switchView('display')">🪧 Standee · Tentcard · TV</button>
-    <button class="tab" id="tabPromo" onclick="switchView('promo')" style="display:none">📣 Báo cáo CTKM</button>
+    <button class="tab" id="tabPromo" onclick="switchView('done')">✅ Các task đã done</button>
   </div>
 
   <div class="prog" id="posmProg">
@@ -391,6 +391,10 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
   <div class="dsum" id="pSum"></div>
   <div class="dctrl" id="pCtrl"></div>
   <div id="pTableWrap" style="overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></div>
+</div>
+
+<div id="doneWrap" style="display:none;padding:16px;max-width:1100px;margin:0 auto">
+  <div id="doneBody"></div>
 </div>
 
 <div class="scrim" id="scrim" onclick="closeDraw()"></div>
@@ -1487,6 +1491,39 @@ function dStatus(t){const n=dDays(t);
   if(n<0)return{key:'red',label:'Hết hạn '+(-n)+'n – cần đổi',pill:'over'};
   if(n<=3)return{key:'amber',label:n===0?'Hết hạn hôm nay':'Còn '+n+'n',pill:'warn'};
   return{key:'green',label:'Còn '+n+'n',pill:'ok'};}
+function renderDoneView(){
+  var data = JSON.parse(localStorage.getItem('posm_glh_v3')||'{}');
+  var tasksObj = (data && data.tasks) ? data.tasks : {};
+  var done = Object.keys(tasksObj).map(function(k){return tasksObj[k];}).filter(function(t){return t && t.col==='done';});
+  var groups = {};
+  done.forEach(function(t){ var b=t.branch||'Khác'; (groups[b]=groups[b]||[]).push(t); });
+  var esc = function(s){ return (s||'').replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); };
+  var html = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'
+    + '<h2 style="margin:0;font-size:20px">✅ Các task đã done</h2>'
+    + '<span style="background:#16a34a;color:#fff;border-radius:999px;padding:2px 12px;font-weight:600;font-size:14px">'+done.length+' task</span></div>';
+  Object.keys(groups).sort().forEach(function(br){
+    var arr = groups[br].sort(function(a,b){ return new Date(b.updated)-new Date(a.updated); });
+    html += '<div style="margin-bottom:18px">'
+      + '<div style="font-weight:700;color:#334155;margin:8px 0;font-size:15px">📍 '+esc(br)+' · '+arr.length+'</div>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead>'
+      + '<tr style="background:#f1f5f9;text-align:left">'
+      + '<th style="padding:8px;border-bottom:2px solid #e2e8f0;width:80px">Mã PĐX</th>'
+      + '<th style="padding:8px;border-bottom:2px solid #e2e8f0">Tên task</th>'
+      + '<th style="padding:8px;border-bottom:2px solid #e2e8f0;width:120px">Người phụ trách</th>'
+      + '<th style="padding:8px;border-bottom:2px solid #e2e8f0;width:100px">Cập nhật</th></tr></thead><tbody>';
+    arr.forEach(function(t){
+      html += '<tr style="border-bottom:1px solid #eef2f7">'
+        + '<td style="padding:8px;color:#64748b;white-space:nowrap">'+(esc(t.pdx)||'—')+'</td>'
+        + '<td style="padding:8px;font-weight:500">'+esc(t.name)+'</td>'
+        + '<td style="padding:8px">'+(esc(t.requester)||'—')+'</td>'
+        + '<td style="padding:8px;color:#64748b;white-space:nowrap">'+(esc(t.updated)||'—')+'</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  });
+  var body = document.getElementById('doneBody');
+  if(body) body.innerHTML = html;
+}
+
 function switchView(v){ if(v==='promo'){ var __su=(typeof sessionUser==='function'?sessionUser():null); if(!__su||__su.u!=='truc'){ return; } }view=v;
   document.getElementById('tabPosm').classList.toggle('on',v==='posm');
   document.getElementById('tabDisp').classList.toggle('on',v==='display');
@@ -1495,7 +1532,9 @@ function switchView(v){ if(v==='promo'){ var __su=(typeof sessionUser==='functio
   const set=(id,s)=>{const e=document.getElementById(id);if(e)e.style.display=s?'':'none';};
   const posm=(v==='posm');
   ['posmProg','posmSearch','filt','board'].forEach(id=>set(id,posm));
-  set('displayWrap',v==='display');set('promoWrap',v==='promo');set('tableWrap',v==='table');
+  set('displayWrap',v==='display');set('promoWrap',v==='promo');set('tableWrap',v==='table');set('doneWrap',v==='done');
+  const _tp=document.getElementById('tabPromo'); if(_tp) _tp.classList.toggle('on',v==='done');
+  if(v==='done'){ try{ renderDoneView(); }catch(e){} }
   set('btnTunhap',posm);set('btnExcel',posm);
   if(v==='table'){ buildTable(); }
   render();}
@@ -3196,7 +3235,7 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
 })();
 </script>
 
-<script id="ctkm-hide-promo">(function(){function h(){var t=document.getElementById("tabPromo");if(t)t.style.display="none";var w=document.getElementById("promoWrap");if(t&&t.classList.contains("on")){if(typeof window.switchView==="function"){try{window.switchView("posm");}catch(e){}}}if(w){w.style.display="none";}}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",h);else h();setTimeout(h,300);})();</script>
+<script id="ctkm-hide-promo">/* disabled: tab repurposed to 'Các task đã done' */</script>
 
 
 <script id="cn-layout-export">
