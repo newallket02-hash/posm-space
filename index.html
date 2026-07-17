@@ -348,7 +348,7 @@ a.dl{color:var(--gold);font-weight:600;text-decoration:none}a.dl:hover{text-deco
   <div class="tabs">
     <button class="tab on" id="tabPosm" onclick="switchView('posm')">📋 Tiến độ POSM</button>
     <button class="tab" id="tabDisp" onclick="switchView('display')">🪧 Standee · Tentcard · TV</button>
-    <button class="tab" id="tabPromo" onclick="switchView('promo')">📣 Báo cáo CTKM</button>
+    <button class="tab" id="tabPromo" onclick="switchView('promo')" style="display:none">📣 Báo cáo CTKM</button>
     <button class="tab" id="tabTable" onclick="switchView('table')">🧮 Bảng (Excel)</button>
   </div>
 
@@ -995,7 +995,42 @@ window.__chatStarted=false; function initChat(){   if(window.__chatStarted) retu
       `<div style="margin:4px 0"><b style="color:${m.id===uid?'#2563eb':'#111'}">${esc(m.nick||'?')}:</b> ${esc(m.text)}</div>`).join('');
     log.scrollTop = log.scrollHeight;
   }
-  function renderAll(board){ lastBoard = board; renderUsers(board.presence); renderLog(board); }
+  function renderPresenceTL(presence){
+  presence = presence || {};
+  function __esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  var box = document.getElementById('presenceTL');
+  if(!box){
+    box = document.createElement('div');
+    box.id = 'presenceTL';
+    box.style.cssText = 'position:fixed;left:10px;top:70px;z-index:9999;font-size:12px;line-height:1.6;color:#374151;font-family:inherit;pointer-events:none;';
+    document.body.appendChild(box);
+  }
+  var now = Date.now();
+  var online = {};
+  Object.keys(presence).forEach(function(k){
+    var p = presence[k]; if(!p) return;
+    if(now - (p.ts||0) < 30000 && p.name){ online[String(p.name).trim().toLowerCase()] = true; }
+  });
+  var list = (typeof ACCOUNTS !== 'undefined' ? ACCOUNTS : []);
+  var html = '';
+  list.forEach(function(a){
+    var nm = a.name || a.u;
+    var isOn = !!online[String(nm).trim().toLowerCase()] || !!online[String(a.u).trim().toLowerCase()];
+    var color = isOn ? '#22c55e' : '#9ca3af';
+    html += '<div style="white-space:nowrap;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:'+color+';"></span>'+__esc(nm)+'</div>';
+  });
+  box.innerHTML = html;
+}
+function __revealCTKM(){
+  try{
+    var su = (typeof sessionUser==='function'? sessionUser():null);
+    var btn = document.getElementById('tabPromo');
+    if(btn){ btn.style.display = (su && su.u==='truc') ? '' : 'none'; }
+  }catch(e){}
+}
+setInterval(__revealCTKM, 1000);
+document.addEventListener('DOMContentLoaded', __revealCTKM);
+function renderAll(board){ lastBoard = board; renderUsers(board.presence); try{ renderPresenceTL(board.presence); }catch(e){} renderLog(board); }
   async function poll(){
     try{
       const board = await fetch(API,{cache:'no-store'}).then(r=>r.json());
@@ -1453,7 +1488,7 @@ function dStatus(t){const n=dDays(t);
   if(n<0)return{key:'red',label:'Hết hạn '+(-n)+'n – cần đổi',pill:'over'};
   if(n<=3)return{key:'amber',label:n===0?'Hết hạn hôm nay':'Còn '+n+'n',pill:'warn'};
   return{key:'green',label:'Còn '+n+'n',pill:'ok'};}
-function switchView(v){view=v;
+function switchView(v){ if(v==='promo'){ var __su=(typeof sessionUser==='function'?sessionUser():null); if(!__su||__su.u!=='truc'){ return; } }view=v;
   document.getElementById('tabPosm').classList.toggle('on',v==='posm');
   document.getElementById('tabDisp').classList.toggle('on',v==='display');
   document.getElementById('tabPromo').classList.toggle('on',v==='promo');
@@ -3350,7 +3385,7 @@ try{ __loadAvatar(); refreshMyAvatar(); __pullAvatarsServer(); }catch(e){}
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
-</script><div id="chatBox">
+</script><div id="chatBox" style="display:none">
   <div id="chatHead">
     <div class="chatHeadLeft">
       <span class="chatHeadAva">💬</span>
