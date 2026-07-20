@@ -1014,7 +1014,7 @@ window.__chatStarted=false; function initChat(){   if(window.__chatStarted) retu
   var online = {};
   Object.keys(presence).forEach(function(k){
     var p = presence[k]; if(!p) return;
-    if(now - (p.ts||0) < 30000 && p.name){ online[String(p.name).trim().toLowerCase()] = true; }
+    if(now - (p.ts||0) < ONLINE_MS){ if(p.name) online[String(p.name).trim().toLowerCase()] = true; if(p.u) online[String(p.u).trim().toLowerCase()] = true; online[String(k).trim().toLowerCase()] = true; }
   });
   var list = (typeof ACCOUNTS !== 'undefined' ? ACCOUNTS : []);
   var html = ''; var onCount = 0;
@@ -1033,15 +1033,15 @@ document.addEventListener('click', function(e){ var d=document.getElementById('m
 function __revealCTKM(){ var btn=document.getElementById('tabPromo'); if(btn){ btn.style.display=''; } }
 setInterval(__revealCTKM, 1000);
 document.addEventListener('DOMContentLoaded', __revealCTKM);
-function renderAll(board){ lastBoard = board; renderUsers(board.presence); try{ renderPresenceTL(board.presence); }catch(e){} renderLog(board); }
+function renderAll(board){ lastBoard = board; renderUsers(lastPresence); renderLog(board); }
   async function poll(){
     try{
       const board = await fetch(API,{cache:'no-store'}).then(r=>r.json());
       renderAll(board);
     }catch(e){}
   }
-  async function heartbeat(){
-    try{ await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ presence:{ id:uid, name:myNick } })}); }catch(e){}
+  var ONLINE_MS = 60000; var lastPresence = {}; async function pollPresence(){ try{ var r = await fetch(API + '?presence=1',{cache:'no-store'}); if(r.ok){ var j = await r.json(); if(j && j.presence){ lastPresence = j.presence; renderPresenceTL(lastPresence); renderUsers(lastPresence); } } }catch(e){} } async function heartbeat(){
+    try{ await fetch(API + '?presence=1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ presence:{ id:uid, name:myNick, u:uid } })}); }catch(e){}
   }
   async function send(){
     const text = input.value.trim(); if(!text) return; input.value='';
@@ -1056,7 +1056,7 @@ function renderAll(board){ lastBoard = board; renderUsers(board.presence); try{ 
   (function(){ const head=document.getElementById('chatHead'), toggle=document.getElementById('chatToggle'); if(head){ head.addEventListener('click', ()=>{ const c=usersBox.style.display!=='none'; ['chatUsers','chatTitle','chatLog'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=c?'none':(id==='chatTitle'?(activeDM?'block':'none'):''); }); const bar=input.parentNode; if(bar) bar.style.display=c?'none':'flex'; if(toggle) toggle.innerHTML=c?'+':'\u2013'; }); } })();
   poll();
   setInterval(poll, 3000);
-  setInterval(heartbeat, 15000);
+  setInterval(heartbeat, 20000); pollPresence(); setInterval(pollPresence, 15000);
   window.__chatStarted=true;
                                                }
   setInterval(function(){ if(!window.__chatStarted && document.getElementById('chatSend')) initChat(); }, 1000);
